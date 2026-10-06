@@ -502,6 +502,12 @@
     font-size: 10.5px; color: var(--subtle);
     padding-top: 2px; flex-shrink: 0;
   }
+  .app-ver button {
+    background: none; border: none; cursor: pointer;
+    font-family: inherit; font-size: inherit; color: inherit;
+    padding: 0; text-decoration: underline; text-underline-offset: 2px;
+  }
+  .app-ver button:hover { color: var(--accent); }
 
 </style>
 </head>
@@ -788,7 +794,7 @@
         </div>
       </div>
 
-      <div class="app-ver" id="appVer">Typeset v1.0.0</div>
+      <div class="app-ver" id="appVer">Typeset v1.0.0 &bull; <button type="button" onclick="openChangelog()" title="View release notes on GitHub">View Changelog</button></div>
     </section>
 
     <div id="toast" class="toast"><span id="toastMsg">Tersimpan</span></div>
@@ -977,6 +983,14 @@ function cancelUpdate() {
 function laterUpdate() {
   update.dismissed = true;
   renderUpdate();
+}
+
+var CHANGELOG_BASE = 'https://github.com/rfibyzan/typeset/releases';
+
+function openChangelog() {
+  var url = CHANGELOG_BASE;
+  if (update.available && update.version) url += '/tag/v' + update.version;
+  sendToHost({ action: 'openChangelog', url: url });
 }
 
 window.onUpdateEvent = function(ev) {
@@ -1992,7 +2006,7 @@ function applyInitialData() {
     if (d.lastUsed) state.lastUsed = d.lastUsed;
     if (typeof d.appVersion === 'string' && d.appVersion) update.current = d.appVersion;
     var av = $('appVer');
-    if (av) av.textContent = 'Typeset v' + update.current;
+    if (av) av.innerHTML = 'Typeset v' + update.current + ' &bull; <button type="button" onclick="openChangelog()" title="View release notes on GitHub">View Changelog</button>';
     if (d.theme === 'light' || d.theme === 'dark') state.theme = d.theme;
     if (typeof d.alwaysOnTop === 'boolean') state.alwaysOnTop = d.alwaysOnTop;
     if (d.presets) {
@@ -2087,6 +2101,7 @@ window.switchPopDiscard = switchPopDiscard;
 window.startUpdate = startUpdate;
 window.cancelUpdate = cancelUpdate;
 window.laterUpdate = laterUpdate;
+window.openChangelog = openChangelog;
 window.renderUpdate = renderUpdate;
 
 /* ---------- switch guard popover ---------- */

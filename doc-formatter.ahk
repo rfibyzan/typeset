@@ -113,7 +113,7 @@ iniFile := A_ScriptDir . "\doc_formatter.ini"
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.0"
+APP_VERSION := "1.0.1"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""
@@ -1450,6 +1450,17 @@ ProcessWebCommand(rawJson) {
                     StartUpdateDownload(updUrl, updVer, updSize)
             case "cancelUpdate":
                 CancelUpdateDownload()
+            case "openChangelog":
+                clUrl := RegExMatch(rawJson, '`"url`":\s*`"([^`"]+)`"', &mCl) ? mCl[1] : ""
+                if (clUrl == "" || !(InStr(clUrl, "https://github.com/rfibyzan/typeset") == 1))
+                    ShowToast("Invalid changelog link")
+                else {
+                    try {
+                        Run('"' . clUrl . '"')
+                    } catch {
+                        ShowToast("Could not open browser")
+                    }
+                }
         }
     }
 }
