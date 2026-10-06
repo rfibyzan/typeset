@@ -497,6 +497,11 @@
   @keyframes pulse { 50% { opacity: 0.45; } }
   .note { font-size: 10.5px; color: var(--subtle); padding: 6px 14px 8px; }
   .reset-card { border-color: rgba(248, 113, 113, 0.3); }
+  .app-ver {
+    text-align: center; font-family: var(--mono);
+    font-size: 10.5px; color: var(--subtle);
+    padding-top: 2px; flex-shrink: 0;
+  }
 
 </style>
 </head>
@@ -782,6 +787,8 @@
           </div>
         </div>
       </div>
+
+      <div class="app-ver" id="appVer">Typeset v1.0.0</div>
     </section>
 
     <div id="toast" class="toast"><span id="toastMsg">Tersimpan</span></div>
@@ -1984,6 +1991,8 @@ function applyInitialData() {
     if (d.activePreset) state.activePreset = d.activePreset;
     if (d.lastUsed) state.lastUsed = d.lastUsed;
     if (typeof d.appVersion === 'string' && d.appVersion) update.current = d.appVersion;
+    var av = $('appVer');
+    if (av) av.textContent = 'Typeset v' + update.current;
     if (d.theme === 'light' || d.theme === 'dark') state.theme = d.theme;
     if (typeof d.alwaysOnTop === 'boolean') state.alwaysOnTop = d.alwaysOnTop;
     if (d.presets) {
