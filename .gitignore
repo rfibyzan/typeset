@@ -1,0 +1,4 @@
+doc_formatter.ini
+release/*.zip
+release/Typeset-*/
+Typeset.exe

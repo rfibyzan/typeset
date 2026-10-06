@@ -1,0 +1,300 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Select Preset</title>
+<link rel="stylesheet" href="fonts.css" />
+<style>
+  :root {
+    --bg: #0b0b0d;
+    --panel: #17171c;
+    --ctl: #111114;
+    --border: #1e2029;
+    --border2: #26262e;
+    --text: #f5f5f7;
+    --muted: #a1a1aa;
+    --subtle: #63636b;
+    --accent: #10b981;
+    --sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+    -webkit-user-select: none; user-select: none;
+  }
+  body { display: flex; align-items: flex-start; justify-content: center; padding: 12px 10px; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+  .sw-popup {
+    width: 100%; max-width: 380px;
+    background: rgba(23, 23, 28, 0.96);
+    border: 1px solid var(--border2); border-radius: 12px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255,255,255,0.12);
+    overflow: hidden;
+  }
+  .sw-search {
+    display: flex; align-items: center; gap: 9px;
+    margin: 12px 12px 8px; padding: 7px 11px;
+    background: var(--ctl); border: 1px solid var(--border2); border-radius: 8px;
+    color: var(--subtle);
+  }
+  .sw-search:focus-within { border-color: var(--accent); }
+  .sw-search input {
+    flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+    color: var(--text); font-size: 13px; font-family: var(--sans);
+    -webkit-user-select: text; user-select: text;
+  }
+  .sw-search input::placeholder { color: var(--subtle); }
+  .sw-list { max-height: 300px; overflow-y: auto; padding: 2px 8px 8px; }
+  .sw-head {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--subtle); padding: 7px 8px 3px;
+  }
+  .sw-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 9px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  }
+  .sw-row:hover, .sw-row.hi { background: rgba(127, 127, 140, 0.14); }
+  .sw-name.on { color: var(--accent); font-weight: 600; }
+  .sw-time { font-family: var(--mono); font-size: 11px; color: var(--subtle); }
+  .sw-div { height: 1px; background: var(--border); margin: 5px 4px; }
+  .sw-empty { padding: 12px; font-size: 12px; color: var(--subtle); text-align: center; }
+  .sw-hints {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px; border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--muted);
+  }
+  .sw-hints b { color: var(--text); font-weight: 600; }
+  .sw-hints i { font-style: normal; color: var(--subtle); margin: 0 3px; }
+  .sw-hints .mono { font-family: var(--mono); font-size: 10px; color: var(--subtle); }
+</style>
+</head>
+<body>
+
+<div class="sw-popup" role="dialog" aria-modal="true" aria-label="Quick Preset Switcher">
+  <div class="sw-search">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    <input id="swSearch" placeholder="Type to search presets…" autocomplete="off" spellcheck="false" aria-label="Search presets" />
+  </div>
+  <div id="swList" class="sw-list"></div>
+  <div class="sw-hints"><span><b>Enter</b> to activate <i>•</i> <b>Esc</b> to cancel</span><span id="swDbg" class="mono"></span><span class="mono">↑↓ navigate</span></div>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function() {
+'use strict';
+
+var presets = {};
+var activePreset = '';
+var lastUsed = {};
+var swFilter = '';
+var swIndex = 0;
+var swRows = [];
+
+function $(id) { return document.getElementById(id); }
+
+if (window.initialData) {
+  var d = window.initialData;
+  if (d.presets) presets = d.presets;
+  if (d.activePreset) activePreset = d.activePreset;
+  if (d.lastUsed) lastUsed = d.lastUsed;
+}
+
+function sendToHost(payload) {
+  try {
+    if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage(payload);
+  } catch (e) {}
+  document.title = 'AHK_MSG:' + JSON.stringify(payload) + '|~TS~|' + Date.now();
+}
+
+function relTime(ts) {
+  if (!ts || String(ts).length < 14) return '';
+  var t = new Date(+ts.substr(0, 4), +ts.substr(4, 2) - 1, +ts.substr(6, 2),
+    +ts.substr(8, 2), +ts.substr(10, 2), +ts.substr(12, 2)).getTime();
+  var diff = Date.now() - t;
+  if (diff < 0) diff = 0;
+  var mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + ' min ago';
+  var hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + ' hr ago';
+  var days = Math.floor(hrs / 24);
+  if (days === 1) return 'yesterday';
+  if (days < 7) return days + ' days ago';
+  if (days < 30) return Math.floor(days / 7) + ' wk ago';
+  return Math.floor(days / 30) + ' mo ago';
+}
+
+function switcherNames() {
+  var q = (swFilter || '').trim().toLowerCase();
+  var names = Object.keys(presets).filter(function(n) {
+    return !q || n.toLowerCase().indexOf(q) >= 0;
+  });
+  var withT = names.filter(function(n) { return !!lastUsed[n]; });
+  withT.sort(function(a, b) { return lastUsed[a] < lastUsed[b] ? 1 : (lastUsed[a] > lastUsed[b] ? -1 : 0); });
+  var recent = withT.slice(0, 3);
+  var rest = names.filter(function(n) { return recent.indexOf(n) < 0; });
+  rest.sort();
+  return { recent: recent, rest: rest };
+}
+
+function paintSwHi() {
+  var rows = document.querySelectorAll('#swList .sw-row');
+  rows.forEach(function(r, i) {
+    r.classList.toggle('hi', i === swIndex);
+    if (i === swIndex && r.scrollIntoView) {
+      try { r.scrollIntoView({ block: 'nearest' }); } catch (e) {}
+    }
+  });
+}
+
+function renderSwitcher() {
+  var data = switcherNames();
+  var list = $('swList');
+  list.innerHTML = '';
+  swRows = [];
+  function addRow(name, active) {
+    (function(n, isActive) {
+      var row = document.createElement('div');
+      row.className = 'sw-row' + (swRows.length === swIndex ? ' hi' : '');
+      var left = document.createElement('span');
+      left.className = 'sw-name' + (isActive ? ' on' : '');
+      left.innerText = (isActive ? '● ' : '') + n;
+      var right = document.createElement('span');
+      right.className = 'sw-time';
+      right.innerText = lastUsed[n] ? relTime(lastUsed[n]) : '';
+      row.appendChild(left);
+      row.appendChild(right);
+      row.onclick = function() { activatePreset(n); };
+      list.appendChild(row);
+      swRows.push(n);
+    })(name, active);
+  }
+  function header(t) {
+    var h = document.createElement('div');
+    h.className = 'sw-head';
+    h.innerText = t;
+    list.appendChild(h);
+  }
+  if (data.recent.length) {
+    header('Recently Used');
+    data.recent.forEach(function(n) { addRow(n, n === activePreset); });
+  }
+  if (data.recent.length && data.rest.length) {
+    var dv = document.createElement('div');
+    dv.className = 'sw-div';
+    list.appendChild(dv);
+  }
+  if (!data.recent.length || data.rest.length) {
+    if (data.recent.length) header('All Presets');
+    data.rest.forEach(function(n) { addRow(n, n === activePreset); });
+  }
+  if (!swRows.length) {
+    var em = document.createElement('div');
+    em.className = 'sw-empty';
+    em.innerText = 'No matching presets';
+    list.appendChild(em);
+  }
+  if (swIndex >= swRows.length) swIndex = Math.max(0, swRows.length - 1);
+  paintSwHi();
+}
+
+function activatePreset(name) {
+  if (!presets[name]) return;
+  sendToHost({ action: 'setActivePreset', name: name });
+}
+
+function closeSwitcher() {
+  sendToHost({ action: 'closeSwitcher' });
+}
+
+document.addEventListener('keydown', function(e) {
+  updDbg(e.key);
+  if (e.repeat) return;
+  if (e.key === 'Escape') { closeSwitcher(); return; }
+  if (e.key === 'ArrowDown') { e.preventDefault(); swMove(1); return; }
+  if (e.key === 'ArrowUp') { e.preventDefault(); swMove(-1); return; }
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (swRows[swIndex]) activatePreset(swRows[swIndex]);
+    return;
+  }
+  var tag = (e.target && e.target.tagName) || '';
+  if (tag !== 'INPUT' && !e.ctrlKey && !e.altKey && !e.metaKey && e.key && e.key.length === 1) {
+    var inp = $('swSearch');
+    if (inp && document.activeElement !== inp) {
+      e.preventDefault();
+      inp.focus();
+      inp.value = (inp.value || '') + e.key;
+      swFilter = inp.value;
+      swIndex = 0;
+      renderSwitcher();
+    }
+  }
+});
+
+function swMove(dir) {
+  if (!swRows.length) return;
+  swIndex = (swIndex + dir + swRows.length) % swRows.length;
+  paintSwHi();
+}
+
+$('swSearch').addEventListener('input', function() {
+  swFilter = $('swSearch').value || '';
+  swIndex = 0;
+  renderSwitcher();
+});
+
+function focusSearch() {
+  var inp = $('swSearch');
+  if (inp && document.activeElement !== inp) inp.focus();
+}
+
+var dbgKey = '-';
+var dbgCount = 0;
+var dbgErr = '';
+window.onerror = function(msg) {
+  try { dbgErr = String(msg).split('\n')[0].substring(0, 50); } catch (e) {}
+};
+function updDbg(k) {
+  if (k !== undefined) { dbgKey = k; dbgCount++; }
+  var d = $('swDbg');
+  if (!d) return;
+  var t = document.activeElement ? document.activeElement.tagName : '?';
+  var w = false;
+  try { w = document.hasFocus(); } catch (e) {}
+  d.innerText = 'win:' + (w ? 'Y' : 'N') + ' f:' + t + ' #' + dbgCount + ' r:' + swRows.length + ' i:' + swIndex + (dbgErr ? ' E:' + dbgErr : '');
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  renderSwitcher();
+  setTimeout(focusSearch, 30);
+  setTimeout(focusSearch, 300);
+});
+window.addEventListener('focus', focusSearch);
+document.addEventListener('pointerdown', function() { focusSearch(); });
+var lastSwVal = '';
+setInterval(function() {
+  updDbg();
+  var inp = $('swSearch');
+  if (inp && inp.value !== lastSwVal) {
+    lastSwVal = inp.value;
+    swFilter = inp.value || '';
+    swIndex = 0;
+    renderSwitcher();
+  }
+}, 200);
+renderSwitcher();
+focusSearch();
+})();
+</script>
+</body>
+</html>
