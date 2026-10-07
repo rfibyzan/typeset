@@ -464,7 +464,7 @@
     border: 1px solid rgba(244, 63, 94, 0.35);
     border-radius: 12px;
     box-shadow: 0 0 15px rgba(244, 63, 94, 0.08), var(--shadow-card);
-    padding: 10px 18px 13px;
+    padding: 8px 18px 11px;
     overflow: hidden;
     flex-shrink: 0;
   }
@@ -513,6 +513,9 @@
   @keyframes upd-rot { to { transform: rotate(360deg); } }
 
   /* Pengaturan */
+  #tabSettings { gap: 6px; }
+  #tabSettings .sc-row { padding: 3px 14px; }
+  #tabSettings .note { padding: 4px 14px 5px; }
   .sc-row {
     display: flex; align-items: center; justify-content: space-between;
     padding: 7px 14px; font-size: 12px;
@@ -529,7 +532,7 @@
   .app-ver {
     text-align: center; font-family: var(--mono);
     font-size: 10.5px; color: var(--subtle);
-    padding-top: 2px; flex-shrink: 0;
+    padding-top: 0; flex-shrink: 0;
   }
   .app-ver button {
     background: none; border: none; cursor: pointer;
@@ -794,7 +797,7 @@
       </div>
 
       <div class="card">
-        <div class="row" style="padding-top:8px; padding-bottom:8px;">
+        <div class="row" style="padding-top:6px; padding-bottom:6px;">
           <span class="row-name">Theme</span>
           <div class="ctl seg">
             <button type="button" id="btnThemeLight" onclick="setTheme('light')">Light</button>
@@ -804,7 +807,7 @@
       </div>
 
       <div class="card">
-        <div class="row" style="padding-top:8px; padding-bottom:8px;">
+        <div class="row" style="padding-top:6px; padding-bottom:6px;">
           <span class="row-name">Always on Top</span>
           <input type="checkbox" class="chk" id="chkAlwaysOnTop" checked onchange="onAlwaysOnTop()" title="Always on Top" aria-label="Always on Top" />
         </div>
@@ -817,20 +820,19 @@
       </div>
 
       <div class="card">
-        <h2>Preset Backup</h2>
-        <div class="row" style="padding-top:8px; padding-bottom:8px;">
-          <span class="row-name">Share between PCs</span>
+        <div class="row" style="padding-top:6px; padding-bottom:6px;">
+          <span class="row-name">Preset Backup</span>
           <div class="ctl" style="gap:6px;">
             <button type="button" class="btn" onclick="exportPresets()" title="Save presets to a JSON file">Export</button>
             <button type="button" class="btn" onclick="document.getElementById('importFile').click()" title="Merge presets from a JSON file">Import</button>
             <input type="file" id="importFile" accept=".json,application/json" style="display:none;" onchange="importPresetsFile(this)" />
           </div>
         </div>
-        <div class="note">Export saves presets to a JSON file (keep it in your cloud drive to sync PCs). Import merges it here.</div>
+        <div class="note">Save presets to JSON (cloud drive syncs PCs). Import merges the file here.</div>
       </div>
 
       <div class="card reset-card" style="position:relative;">
-        <div class="row" style="padding-top:9px; padding-bottom:9px;">
+        <div class="row" style="padding-top:7px; padding-bottom:7px;">
           <div>
             <div class="row-name">Reset</div>
             <div style="font-size:10.5px; color:var(--muted); margin-top:1px;">Restore all presets and settings to defaults</div>

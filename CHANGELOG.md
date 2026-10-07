@@ -3,6 +3,14 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.13]
+
+### Fixed
+
+- Settings tab layout compacted so the version footer (View
+  Changelog, Check for updates) is fully visible at 860x640, with
+  and without the update card showing.
+
 ## [1.0.12]
 
 ### Added
