@@ -113,7 +113,7 @@ iniFile := A_ScriptDir . "\doc_formatter.ini"
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.2"
+APP_VERSION := "1.0.3"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""
@@ -233,10 +233,10 @@ A_TrayMenu.Delete()
 A_TrayMenu.Add("Exit", (*) => ExitApp())
 OnMessage(0x404, TrayIconClick)
 
-; Klik kiri maupun kanan pada tray icon langsung membuka window Typeset.
-; Menu hanya berisi Exit sebagai jalan keluar saat window tertutup.
+; Klik kiri pada tray icon langsung membuka window Typeset.
+; Klik kanan menampilkan menu bawaan (Exit).
 TrayIconClick(wParam, lParam, *) {
-    if (lParam == 0x202 || lParam == 0x205) {
+    if (lParam == 0x202) {
         try ShowModernConfigUI()
     }
 }

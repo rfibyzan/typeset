@@ -3,6 +3,13 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.3]
+
+### Changed
+
+- Tray right-click shows the menu again (Exit only); only left-click
+  opens the Typeset window directly.
+
 ## [1.0.2]
 
 ### Added
