@@ -87,7 +87,7 @@ ShowToast(msg, duration := 1200) {
 
     toastGui.SetFont("s8 c10B981", "Segoe UI Symbol")
     toastGui.Add("Text", "", Chr(0x25CF))
-    toastGui.SetFont("s9 cFFFFFF", "Segoe UI")
+    toastGui.SetFont("s9 w600 cFFFFFF", "Segoe UI")
     toastGui.Add("Text", "ys x+8", msg)
 
     toastGui.Show("AutoSize NoActivate Hide")
@@ -166,7 +166,7 @@ if (FileExist(iniFile) && FileExist(oldIniFile)) {
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.8"
+APP_VERSION := "1.0.9"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""

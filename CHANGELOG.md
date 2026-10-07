@@ -3,6 +3,18 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.9]
+
+### Changed
+
+- Native toast text uses semibold weight to match the app type.
+- Preset switcher debug readout removed.
+
+### Removed
+
+- Leftover switcher instrumentation (debug footer element, keystroke
+  counter, 200ms polling loop).
+
 ## [1.0.8]
 
 ### Changed
