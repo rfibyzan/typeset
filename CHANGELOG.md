@@ -3,6 +3,26 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.6]
+
+### Added
+
+- Frameless window with custom title bar: app logo, active preset
+  badge, and working minimize and close buttons. Drag the bar to
+  move the window; close returns to tray as before.
+
+### Changed
+
+- In-app success toasts restored for save, rename, delete, revert,
+  and shortcut changes. Native toasts stay gated to closed or
+  minimized windows, so the two never double up.
+- Native toast dot renders with a guaranteed glyph font.
+
+### Fixed
+
+- Color wheel no longer shifts when the brightness percent changes;
+  the label column has a fixed width.
+
 ## [1.0.5]
 
 ### Added

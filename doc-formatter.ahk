@@ -85,8 +85,8 @@ ShowToast(msg, duration := 1200) {
     toastGui.MarginX := 0
     toastGui.MarginY := 0
 
-    toastGui.SetFont("s10 c10B981", "Segoe UI")
-    toastGui.Add("Text", "x14 y9", "●")
+    toastGui.SetFont("s10 c10B981", "Segoe UI Symbol")
+    toastGui.Add("Text", "x14 y9", Chr(0x25CF))
     toastGui.SetFont("s9 cFFFFFF", "Segoe UI")
     toastGui.Add("Text", "x32 y10", msg)
 
@@ -145,7 +145,7 @@ if (FileExist(iniFile) && FileExist(oldIniFile)) {
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.5"
+APP_VERSION := "1.0.6"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""
@@ -1058,10 +1058,11 @@ ShowModernConfigUI() {
 
     ExportConfigToJs()
 
-    ; Buat Window Native Win32 tanpa browser chrome (Fixed size, non-resizable)
+    ; Window frameless 860x640 dengan title bar kustom dari HTML.
+    ; Drag, minimize, dan close ditangani via pesan winDrag/winMin/winClose.
     aotTop := Integer(IniRead(iniFile, "Settings", "AlwaysOnTop", "1"))
     topFlag := aotTop ? "+AlwaysOnTop " : ""
-    webGui := Gui(topFlag . "-Resize -MaximizeBox", "Typeset")
+    webGui := Gui(topFlag . "-Caption -Resize -MaximizeBox", "Typeset")
     webGui.MarginX := 0, webGui.MarginY := 0
     webGui.BackColor := "0xFFFFFF"
     SetRoundedCorners(webGui.Hwnd)
@@ -1096,30 +1097,42 @@ ShowModernConfigUI() {
         webGui := "", wvc := "", activeWv := ""
         ShowToast("Failed to open Modern UI: " . err.Message)
     }
+}
 
-    TryFillWvc() {
-        if IsObject(wvc) {
-            try wvc.Fill()
-        }
+TryFillWvc() {
+    global wvc
+    if IsObject(wvc) {
+        try wvc.Fill()
     }
+}
 
-    CloseWebGui(*) {
-        global webGui, wvc, activeWv
-        SetTimer(ListenWebUiMessages, 0)
-        if IsObject(webGui) {
-            try webGui.OnEvent("Size", (*) => "")
-            try webGui.OnEvent("Close", (*) => "")
-            try webGui.OnEvent("Escape", (*) => "")
-        }
-        tempWvc := wvc
-        wvc := "", activeWv := ""
-        if IsObject(tempWvc) {
-            try tempWvc.Close()
-        }
-        if IsObject(webGui) {
-            try webGui.Destroy()
-        }
-        webGui := ""
+CloseWebGui(*) {
+    global webGui, wvc, activeWv
+    SetTimer(ListenWebUiMessages, 0)
+    if IsObject(webGui) {
+        try webGui.OnEvent("Size", (*) => "")
+        try webGui.OnEvent("Close", (*) => "")
+        try webGui.OnEvent("Escape", (*) => "")
+    }
+    tempWvc := wvc
+    wvc := "", activeWv := ""
+    if IsObject(tempWvc) {
+        try tempWvc.Close()
+    }
+    if IsObject(webGui) {
+        try webGui.Destroy()
+    }
+    webGui := ""
+}
+
+; Mulai drag window ala title bar native (dipicu dari title bar HTML).
+DragMainWindow() {
+    global webGui
+    if !IsObject(webGui)
+        return
+    try {
+        DllCall("ReleaseCapture")
+        PostMessage(0xA1, 2, 0, webGui.Hwnd)
     }
 }
 
@@ -1484,6 +1497,15 @@ ProcessWebCommand(rawJson) {
                     StartUpdateDownload(updUrl, updVer, updSize)
             case "cancelUpdate":
                 CancelUpdateDownload()
+            case "winDrag":
+                DragMainWindow()
+            case "winMin":
+                try {
+                    if IsObject(webGui)
+                        WinMinimize("ahk_id " . webGui.Hwnd)
+                }
+            case "winClose":
+                CloseWebGui()
             case "openChangelog":
                 clUrl := RegExMatch(rawJson, '`"url`":\s*`"([^`"]+)`"', &mCl) ? mCl[1] : ""
                 if (clUrl == "" || !(InStr(clUrl, "https://github.com/rfibyzan/typeset") == 1))
