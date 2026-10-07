@@ -70,6 +70,26 @@ ChooseColorDlg(initHex := "#000000", ownerHwnd := 0) {
     return ""
 }
 
+; Daftarkan font Geist sekali jalan agar toast native memakai typeface
+; yang sama dengan UI (tanpa admin: direktori font user + registry HKCU).
+InstallAppFonts() {
+    fontsDir := A_ScriptDir . "\assets\fonts"
+    if !DirExist(fontsDir)
+        return
+    userFonts := EnvGet("LOCALAPPDATA") . "\Microsoft\Windows\Fonts"
+    try DirCreate(userFonts)
+    Loop Files, fontsDir . "\*.ttf" {
+        dest := userFonts . "\" . A_LoopFileName
+        if !FileExist(dest) {
+            try FileCopy(A_LoopFileFullPath, dest)
+        }
+        if FileExist(dest) {
+            try DllCall("gdi32\AddFontResourceExW", "WStr", dest, "UInt", 0x10, "Ptr", 0)
+            try RegWrite(dest, "REG_SZ", "HKCU\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts", A_LoopFileName . " (TrueType)")
+        }
+    }
+}
+
 ; ==========================================================
 ; FUNGSI NOTIFIKASI TOAST MODERN (HUD / OSD)
 ; ==========================================================
@@ -87,7 +107,7 @@ ShowToast(msg, duration := 1200) {
 
     toastGui.SetFont("s8 c10B981", "Segoe UI Symbol")
     toastGui.Add("Text", "", Chr(0x25CF))
-    toastGui.SetFont("s9 w600 cFFFFFF", "Segoe UI")
+    toastGui.SetFont("s9 w600 cFFFFFF", "Geist")
     toastGui.Add("Text", "ys x+8", msg)
 
     toastGui.Show("AutoSize NoActivate Hide")
@@ -163,10 +183,12 @@ if (FileExist(iniFile) && FileExist(oldIniFile)) {
     try FileDelete(oldIniFile)
 }
 
+InstallAppFonts()
+
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.9"
+APP_VERSION := "1.0.10"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""

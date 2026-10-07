@@ -14,8 +14,9 @@ How to ship an update so installed apps offer it automatically.
 1. In `doc-formatter.ahk`, bump `APP_VERSION := "1.0.0"` to `"1.0.1"`.
 2. Compile 64-bit:
    `Ahk2Exe.exe /in doc-formatter.ahk /out Typeset.exe /base "C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe"`
-3. Rebuild the package folder `release\Typeset-1.0.1\` with:
-   `Typeset.exe`, `WebView2Loader.dll`, `64bit\WebView2Loader.dll`, `ui\`
+3. Rebuild the package folder `release\Typeset-X.Y.Z\` with:
+   `Typeset.exe`, `WebView2Loader.dll`, `64bit\WebView2Loader.dll`,
+   `ui\` (without generated `data.js`), `assets\fonts\` (TTF + OFL)
    (never ship `typeset.ini`; it holds user settings and is created on first run).
 4. Zip it as `Typeset-1.0.1.zip` and note the exact byte size.
 5. On GitHub, create release `v1.0.1` and upload the zip.

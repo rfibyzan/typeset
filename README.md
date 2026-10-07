@@ -50,6 +50,14 @@ other tabs). Click `Update`, keep working while it downloads, and the
 app restarts itself on the new version. `Later` hides it until the next
 launch. `View Changelog` opens the release notes on GitHub.
 
+## Fonts
+
+The UI uses Geist and JetBrains Mono from `ui/fonts/` (web). The same
+Geist files are bundled under `assets/fonts/` (SIL Open Font License,
+see `OFL.txt`) and registered automatically to the user font store on
+first run, so native notifications render in the identical typeface.
+No admin rights needed and nothing is installed system-wide.
+
 ## For maintainers
 
 - Source of truth: `doc-formatter.ahk` (AutoHotkey v2) + `ui/`.

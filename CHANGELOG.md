@@ -3,6 +3,13 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.10]
+
+### Added
+
+- Bundled Geist typeface auto-registers on first run (user fonts,
+  no admin), so the native toast uses the exact same font as the UI.
+
 ## [1.0.9]
 
 ### Changed
