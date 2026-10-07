@@ -113,7 +113,7 @@ iniFile := A_ScriptDir . "\doc_formatter.ini"
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.1"
+APP_VERSION := "1.0.2"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""
@@ -230,11 +230,16 @@ ExportConfigToJs()
 ; MENU TRAY (TASKBAR SYSTEM TRAY)
 ; ==========================================================
 A_TrayMenu.Delete()
-A_TrayMenu.Add("Open Typeset", (*) => ShowModernConfigUI())
-A_TrayMenu.Add()
-A_TrayMenu.Add("Reload Script", (*) => Reload())
 A_TrayMenu.Add("Exit", (*) => ExitApp())
-A_TrayMenu.Default := "Open Typeset"
+OnMessage(0x404, TrayIconClick)
+
+; Klik kiri maupun kanan pada tray icon langsung membuka window Typeset.
+; Menu hanya berisi Exit sebagai jalan keluar saat window tertutup.
+TrayIconClick(wParam, lParam, *) {
+    if (lParam == 0x202 || lParam == 0x205) {
+        try ShowModernConfigUI()
+    }
+}
 
 BindShortcuts()
 

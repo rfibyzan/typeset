@@ -2,7 +2,7 @@
 window.initialData = {
   activePreset: "Laprak",
   theme: "dark",
-  appVersion: "1.0.1",
+  appVersion: "1.0.2",
   shortcuts: {
     Format: "Ctrl+Shift+F",
     Switcher: "Win+Shift+F",
