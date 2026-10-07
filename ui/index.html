@@ -378,7 +378,7 @@
 
   /* Palet warna */
   #palPop { width: fit-content; min-width: 190px; right: 14px; padding-bottom: 10px; }
-  .pal-top { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .pal-top { display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 8px; }
   #palWheel {
     width: 128px; height: 128px; border-radius: 50%; flex-shrink: 0;
     position: relative; cursor: crosshair;
@@ -800,7 +800,7 @@
         </div>
       </div>
 
-      <div class="app-ver" id="appVer">Typeset v1.0.0 &bull; <button type="button" onclick="openChangelog()" title="View release notes on GitHub">View Changelog</button></div>
+      <div class="app-ver" id="appVer">Typeset v1.0.0 &bull; <button type="button" onclick="openChangelog()" title="View release notes on GitHub">View Changelog</button> &bull; <button type="button" onclick="manualCheck()" title="Check for updates now">Check for updates</button></div>
     </section>
 
     <div id="toast" class="toast"><span id="toastMsg">Tersimpan</span></div>
@@ -902,6 +902,7 @@ var update = {
   phase: 'idle',
   pct: 0,
   dismissed: false,
+  dismissedFor: '',
   current: '1.0.0'
 };
 
@@ -988,6 +989,7 @@ function cancelUpdate() {
 
 function laterUpdate() {
   update.dismissed = true;
+  update.dismissedFor = update.version;
   renderUpdate();
 }
 
@@ -1018,34 +1020,63 @@ window.onUpdateEvent = function(ev) {
   }
 };
 
+var manualCheckPending = false;
+
+function manualCheck() {
+  if (update.phase === 'downloading' || update.phase === 'installing') return;
+  update.dismissed = false;
+  update.dismissedFor = '';
+  manualCheckPending = true;
+  showToast('Checking for updates...');
+  checkForUpdate();
+}
+
 function checkForUpdate() {
+  if (update.phase === 'downloading' || update.phase === 'installing') return;
   try {
     var ctrl = null;
     var timer = setTimeout(function() { try { if (ctrl) ctrl.abort(); } catch (e) {} }, 8000);
     var fetchP = null;
+    var bustUrl = UPDATE_URL + (UPDATE_URL.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
     if (typeof AbortController !== 'undefined') {
       ctrl = new AbortController();
-      fetchP = fetch(UPDATE_URL, { signal: ctrl.signal, cache: 'no-store' });
+      fetchP = fetch(bustUrl, { signal: ctrl.signal, cache: 'no-store' });
     } else {
-      fetchP = fetch(UPDATE_URL, { cache: 'no-store' });
+      fetchP = fetch(bustUrl, { cache: 'no-store' });
     }
     fetchP.then(function(r) {
       clearTimeout(timer);
       if (!r || !r.ok) return null;
       return r.json();
     }).then(function(j) {
-      if (!j || typeof j.version !== 'string' || typeof j.url !== 'string') return;
+      var wasManual = manualCheckPending;
+      manualCheckPending = false;
+      if (!j || typeof j.version !== 'string' || typeof j.url !== 'string') {
+        if (wasManual) showToast('Update check failed. Try again.');
+        return;
+      }
       if (cmpVer(j.version, update.current) > 0) {
+        if (update.dismissed && update.dismissedFor === j.version) return;
+        var changed = !update.available || update.version !== j.version;
         update.available = true;
         update.version = j.version;
         update.url = j.url;
         update.notes = (typeof j.notes === 'string') ? j.notes : '';
         update.size = parseInt(j.size, 10) || 0;
-        update.phase = 'idle';
-        update.dismissed = false;
+        if (changed) {
+          update.phase = 'idle';
+          update.dismissed = false;
+        }
         renderUpdate();
+      } else if (wasManual) {
+        showToast('You are up to date.');
       }
-    }).catch(function() {});
+    }).catch(function() {
+      if (manualCheckPending) {
+        manualCheckPending = false;
+        showToast('Update check failed. Try again.');
+      }
+    });
   } catch (e) {}
 }
 
@@ -1168,9 +1199,23 @@ function onPresetChange(fromUser) {
     state.activePreset = name;
     $('lblActivePreset').innerText = name;
     sendToHost({ action: 'setActivePreset', name: name });
+    showToast('Active preset: ' + name);
   }
   refreshDirty();
 }
+
+window.onExternalPreset = function(name) {
+  if (!name || !state.presets[name]) return;
+  state.activePreset = name;
+  var sel = $('presetSelect');
+  if (sel) sel.value = name;
+  ensurePreset(name);
+  if (!snapshots[name]) snapshot(name);
+  loadFormFromPreset(name);
+  $('lblActivePreset').innerText = name;
+  showToast('Active preset: ' + name);
+  refreshDirty();
+};
 
 function presetNameTaken(name, except) {
   var low = String(name).toLowerCase();
@@ -1230,7 +1275,7 @@ function confirmAddPreset() {
   state.activePreset = name;
   $('lblActivePreset').innerText = name;
   sendToHost({ action: 'savePreset', name: name, data: packPreset(name) });
-  showToast('New preset: ' + name);
+  showToast('Active preset: ' + name);
   refreshDirty();
 }
 
@@ -1254,7 +1299,6 @@ function confirmRenamePreset(name) {
   cancelAddPreset();
   rebuildPresetDropdown(name);
   sendToHost({ action: 'renamePreset', old: old, new: name });
-  showToast('Preset renamed to: ' + name);
   refreshDirty();
 }
 
@@ -1279,7 +1323,6 @@ function confirmDeletePreset() {
   }
   rebuildPresetDropdown(next);
   sendToHost({ action: 'deletePreset', name: name });
-  showToast('Preset deleted: ' + name);
   refreshDirty();
 }
 
@@ -1472,7 +1515,6 @@ function saveCurrentPreset() {
   commitCaptionInputs();
   snapshot(name);
   $('dirtyBar').classList.remove('show');
-  showToast('Preset "' + name + '" saved!');
   sendToHost({ action: 'savePreset', name: name, data: packPreset(name) });
 }
 
@@ -1481,7 +1523,6 @@ function revertChanges() {
   if (snapshots[name]) state.presets[name] = clone(snapshots[name]);
   loadFormFromPreset(name);
   refreshDirty();
-  showToast('Changes reverted');
 }
 
 /* ---------- caption ---------- */
@@ -1922,7 +1963,6 @@ function finishRec(display, arrow) {
   }
   renderShortcutRows();
   sendToHost({ action: 'setShortcut', id: id, display: id === 'heading' ? state.shortcuts.heading : state.shortcuts[id], ahk: id === 'heading' ? '' : comboToAhk(display) });
-  showToast('Shortcut updated');
 }
 
 /* ---------- global keys ---------- */
@@ -2012,7 +2052,7 @@ function applyInitialData() {
     if (d.lastUsed) state.lastUsed = d.lastUsed;
     if (typeof d.appVersion === 'string' && d.appVersion) update.current = d.appVersion;
     var av = $('appVer');
-    if (av) av.innerHTML = 'Typeset v' + update.current + ' &bull; <button type="button" onclick="openChangelog()" title="View release notes on GitHub">View Changelog</button>';
+    if (av) av.innerHTML = 'Typeset v' + update.current + ' &bull; <button type="button" onclick="openChangelog()" title="View release notes on GitHub">View Changelog</button> &bull; <button type="button" onclick="manualCheck()" title="Check for updates now">Check for updates</button>';
     if (d.theme === 'light' || d.theme === 'dark') state.theme = d.theme;
     if (typeof d.alwaysOnTop === 'boolean') state.alwaysOnTop = d.alwaysOnTop;
     if (d.presets) {
@@ -2065,6 +2105,9 @@ window.addEventListener('DOMContentLoaded', function() {
   renderCaptionPreview();
   renderUpdate();
   setTimeout(checkForUpdate, 3000);
+  setInterval(function() {
+    if (!update.dismissed) checkForUpdate();
+  }, 15 * 60 * 1000);
 });
 
 /* ---------- exposed globals (inline handlers) ---------- */
@@ -2108,6 +2151,7 @@ window.startUpdate = startUpdate;
 window.cancelUpdate = cancelUpdate;
 window.laterUpdate = laterUpdate;
 window.openChangelog = openChangelog;
+window.manualCheck = manualCheck;
 window.renderUpdate = renderUpdate;
 
 /* ---------- switch guard popover ---------- */

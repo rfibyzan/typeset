@@ -3,6 +3,30 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.5]
+
+### Added
+
+- Manual `Check for updates` link in the Settings footer, with
+  up-to-date and failure feedback.
+- Update check now busts caches and retries every 15 minutes while
+  the app runs (a `Later` dismissal is still honored until restart).
+
+### Changed
+
+- Notifications fire only on preset switch. Settings edits
+  (save, rename, delete, revert, shortcut change) are silent;
+  the dirty bar clearing is the save confirmation. Errors and
+  warnings still notify, as do Word formatting results and updates.
+- Native toast restyled to match the app (charcoal pill with emerald
+  dot, bottom-right) and only appears when the main window is closed
+  or minimized; otherwise the in-app toast shows.
+- Config file renamed to `typeset.ini` with one-time automatic
+  migration from `doc_formatter.ini`.
+- Tray hover tooltip reads `Typeset`; right-click shows the menu,
+  left-click opens the window.
+- Color picker top row centered so no lopsided gap remains.
+
 ## [1.0.4]
 
 ### Changed

@@ -1,4 +1,4 @@
-doc_formatter.ini
+typeset.ini
 release/*.zip
 release/Typeset-*/
 Typeset.exe

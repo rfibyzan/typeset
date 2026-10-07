@@ -1,8 +1,8 @@
-﻿// Auto-generated configuration data from doc_formatter.ini
+﻿// Auto-generated configuration data from typeset.ini
 window.initialData = {
   activePreset: "Laprak",
   theme: "dark",
-  appVersion: "1.0.4",
+  appVersion: "1.0.5",
   shortcuts: {
     Format: "Ctrl+Shift+F",
     Switcher: "Win+Shift+F",
@@ -21,7 +21,7 @@ window.initialData = {
   presets: {
     "Laprak": {
       font: "Times New Roman", size: "12", spacing: "1.5", before: "0", after: "0", color: "#000000", align: "Justify", style: "none",
-      use: { font: true, size: true, style: false, color: true, spacing: true, align: true, before: true, after: true },
+      use: { font: false, size: true, style: false, color: true, spacing: true, align: true, before: true, after: true },
       captions: {
         "tabel": { font: "Times New Roman", size: "10", align: "Left", before: "0", after: "0", color: "#000000", use: { font: true, size: true, color: true, align: true, before: true, after: true } },
         "gambar": { font: "Times New Roman", size: "10", align: "Center", before: "0", after: "0", color: "#000000", use: { font: true, size: true, color: true, align: true, before: true, after: true } }

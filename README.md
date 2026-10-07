@@ -16,7 +16,7 @@ each applied only when its toggle is on.
   rejected with a warning.
 - **Auto-update**: checks GitHub on launch, downloads in the background
   while you keep working, then self-installs on restart without touching
-  your `doc_formatter.ini`.
+  your `typeset.ini`.
 - **Themes**: dark and light, per-user font list, Always-on-Top option.
 
 ## Install
@@ -26,7 +26,7 @@ each applied only when its toggle is on.
 2. Extract it anywhere and run `Typeset.exe`.
 3. Select text in Word, press `Ctrl+Shift+F` to format it.
 
-No installer, no admin rights. Settings live in `doc_formatter.ini`
+No installer, no admin rights. Settings live in `typeset.ini`
 next to the exe and are preserved across updates.
 
 ## Default shortcuts

@@ -73,7 +73,7 @@ ChooseColorDlg(initHex := "#000000", ownerHwnd := 0) {
 ; ==========================================================
 ; FUNGSI NOTIFIKASI TOAST MODERN (HUD / OSD)
 ; ==========================================================
-ShowToast(msg, duration := 1500) {
+ShowToast(msg, duration := 1200) {
     static toastGui := ""
     if IsObject(toastGui) {
         try toastGui.Destroy()
@@ -81,18 +81,20 @@ ShowToast(msg, duration := 1500) {
     }
 
     toastGui := Gui("+AlwaysOnTop -Caption +ToolWindow +Owner")
-    toastGui.BackColor := "0x0F172A"
-    toastGui.MarginX := 24
-    toastGui.MarginY := 12
-    
-    toastGui.SetFont("s10 Bold cFFFFFF", "Segoe UI")
-    toastGui.Add("Text", "Center", msg)
+    toastGui.BackColor := "0x141416"
+    toastGui.MarginX := 0
+    toastGui.MarginY := 0
+
+    toastGui.SetFont("s10 c10B981", "Segoe UI")
+    toastGui.Add("Text", "x14 y9", "●")
+    toastGui.SetFont("s9 cFFFFFF", "Segoe UI")
+    toastGui.Add("Text", "x32 y10", msg)
 
     toastGui.Show("AutoSize NoActivate Hide")
     SetRoundedCorners(toastGui.Hwnd)
     toastGui.GetPos(&x, &y, &w, &h)
-    posX := (A_ScreenWidth - w) // 2
-    posY := 50
+    posX := A_ScreenWidth - w - 20
+    posY := A_ScreenHeight - h - 60
     toastGui.Show("x" . posX . " y" . posY . " NoActivate")
 
     SetTimer(DismissToast, -duration)
@@ -105,15 +107,45 @@ ShowToast(msg, duration := 1500) {
     }
 }
 
+; Toast native hanya tampil bila window utama tertutup atau diminimize.
+; Bila window terbuka, notifikasi web di dalam window yang tampil.
+Notify(msg) {
+    global webGui
+    try {
+        if IsObject(webGui) {
+            if WinExist("ahk_id " . webGui.Hwnd) {
+                try {
+                    if (WinGetMinMax("ahk_id " . webGui.Hwnd) != -1)
+                        return
+                } catch {
+                }
+            }
+        }
+    } catch {
+    }
+    ShowToast(msg)
+}
+
 ; ==========================================================
 ; KONFIGURASI INI
 ; ==========================================================
-iniFile := A_ScriptDir . "\doc_formatter.ini"
+iniFile := A_ScriptDir . "\typeset.ini"
+
+; Migrasi sekali jalan dari nama config lama. Bila config baru belum ada
+; dan file lama ada, pindahkan (pengaturan user utuh). Bila keduanya ada,
+; pakai yang baru dan buang yang lama agar tidak membingungkan.
+oldIniFile := A_ScriptDir . "\doc_formatter.ini"
+if (!FileExist(iniFile) && FileExist(oldIniFile)) {
+    try FileMove(oldIniFile, iniFile)
+}
+if (FileExist(iniFile) && FileExist(oldIniFile)) {
+    try FileDelete(oldIniFile)
+}
 
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.4"
+APP_VERSION := "1.0.5"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""
@@ -231,6 +263,7 @@ ExportConfigToJs()
 ; ==========================================================
 A_TrayMenu.Delete()
 A_TrayMenu.Add("Exit", (*) => ExitApp())
+A_IconTip := "Typeset"
 OnMessage(0x404, TrayIconClick)
 
 ; Klik kiri pada tray icon langsung membuka window Typeset.
@@ -1128,7 +1161,7 @@ ExportConfigToJs() {
         theme := "dark"
     aotJs := Integer(IniRead(iniFile, "Settings", "AlwaysOnTop", "1")) ? "true" : "false"
 
-    js := "// Auto-generated configuration data from doc_formatter.ini`n"
+    js := "// Auto-generated configuration data from typeset.ini`n"
     js .= "window.initialData = {`n"
     js .= "  activePreset: `"" . act . "`",`n"
     js .= "  theme: `"" . theme . "`",`n"
@@ -1268,7 +1301,8 @@ ProcessWebCommand(rawJson) {
                     IniWrite(mName[1], iniFile, "Settings", "ActivePreset")
                     IniWrite(A_Now, iniFile, "LastUsed", mName[1])
                     CloseSwitcherGui("setActive")
-                    ShowToast("Active preset: " . mName[1])
+                    Notify("Active preset: " . mName[1])
+                    PushPresetEvent(mName[1])
                 }
             case "closeSwitcher":
                 CloseSwitcherGui("ipc")
@@ -1340,7 +1374,6 @@ ProcessWebCommand(rawJson) {
                             IniWrite(curG, iniFile, "Captions_" . name, "Gambar")
                     }
                     ExportConfigToJs()
-                    ShowToast("Preset saved: " . name)
                 }
             case "setTheme":
                 th := RegExMatch(rawJson, '`"theme`":\s*`"([^`"]+)`"', &mT) ? mT[1] : ""
@@ -1364,7 +1397,7 @@ ProcessWebCommand(rawJson) {
                 if (sid == "Heading") {
                     mods := HeadingModsToCombo(disp)
                     if (mods == "") {
-                        ShowToast("Invalid heading shortcut")
+                        Notify("Invalid heading shortcut")
                     } else {
                         dupH := false
                         for k, v in CurCombos {
@@ -1372,17 +1405,16 @@ ProcessWebCommand(rawJson) {
                                 dupH := true
                         }
                         if (dupH) {
-                            ShowToast("Shortcut already in use")
+                            Notify("Shortcut already in use")
                         } else if (RebindShortcut("Heading", disp)) {
                             IniWrite(disp, iniFile, "Shortcuts", "Heading")
-                            ShowToast("Shortcut updated")
                         } else {
-                            ShowToast("Failed to bind shortcut")
+                            Notify("Failed to bind shortcut")
                         }
                     }
                 } else if (sid == "Format" || sid == "Switcher" || sid == "CapTable" || sid == "CapFig" || sid == "Menu") {
                     if (disp == "") {
-                        ShowToast("Empty shortcut")
+                        Notify("Empty shortcut")
                     } else {
                         combo := ShortcutToCombo(disp)
                         dup := false
@@ -1393,12 +1425,11 @@ ProcessWebCommand(rawJson) {
                             }
                         }
                         if (combo == "" || dup) {
-                            ShowToast("Invalid shortcut / already in use")
+                            Notify("Invalid shortcut / already in use")
                         } else if (RebindShortcut(sid, disp)) {
                             IniWrite(disp, iniFile, "Shortcuts", sid)
-                            ShowToast("Shortcut updated")
                         } else {
-                            ShowToast("Failed to bind shortcut")
+                            Notify("Failed to bind shortcut")
                         }
                     }
                 }
@@ -1407,22 +1438,21 @@ ProcessWebCommand(rawJson) {
                     IniDelete(iniFile, "Presets", mName[1])
                     IniDelete(iniFile, "Captions_" . mName[1])
                     IniDelete(iniFile, "LastUsed", mName[1])
-                    ShowToast("Preset deleted: " . mName[1])
                 }
             case "renamePreset":
                 if RegExMatch(rawJson, '`"old`":\s*`"([^`"]+)`"', &mOld) && RegExMatch(rawJson, '`"new`":\s*`"([^`"]+)`"', &mNew) {
                     oldName := mOld[1]
                     newName := mNew[1]
                     if (oldName == "" || newName == "") {
-                        ShowToast("Invalid preset name")
+                        Notify("Invalid preset name")
                     } else if (oldName == newName) {
                         ; Exact no-op
                     } else {
                         oldVal := IniRead(iniFile, "Presets", oldName, "")
                         if (oldVal == "") {
-                            ShowToast("Preset not found: " . oldName)
+                            Notify("Preset not found: " . oldName)
                         } else if (StrLower(newName) != StrLower(oldName) && IniRead(iniFile, "Presets", newName, "") != "") {
-                            ShowToast("Preset name already exists: " . newName)
+                            Notify("Preset name already exists: " . newName)
                         } else {
                             IniDelete(iniFile, "Presets", oldName)
                             IniWrite(oldVal, iniFile, "Presets", newName)
@@ -1443,7 +1473,6 @@ ProcessWebCommand(rawJson) {
                                     IniDelete(iniFile, "LastUsed", oldName)
                                 IniWrite(luVal, iniFile, "LastUsed", newName)
                             }
-                            ShowToast("Preset renamed to: " . newName)
                         }
                     }
                 }
@@ -1458,12 +1487,12 @@ ProcessWebCommand(rawJson) {
             case "openChangelog":
                 clUrl := RegExMatch(rawJson, '`"url`":\s*`"([^`"]+)`"', &mCl) ? mCl[1] : ""
                 if (clUrl == "" || !(InStr(clUrl, "https://github.com/rfibyzan/typeset") == 1))
-                    ShowToast("Invalid changelog link")
+                    Notify("Invalid changelog link")
                 else {
                     try {
                         Run('"' . clUrl . '"')
                     } catch {
-                        ShowToast("Could not open browser")
+                        Notify("Could not open browser")
                     }
                 }
         }
@@ -1476,6 +1505,15 @@ JsEscape(s) {
     s := StrReplace(s, "`n", "\n")
     s := StrReplace(s, "`r", "")
     return s
+}
+
+PushPresetEvent(name) {
+    global activeWv
+    if !IsObject(activeWv)
+        return
+    try {
+        activeWv.ExecuteScriptAsync("window.onExternalPreset(`"" . JsEscape(name) . "`")")
+    }
 }
 
 PushUpdateEvent(jsonBody) {
