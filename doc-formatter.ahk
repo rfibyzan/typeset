@@ -113,7 +113,7 @@ iniFile := A_ScriptDir . "\doc_formatter.ini"
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.3"
+APP_VERSION := "1.0.4"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""

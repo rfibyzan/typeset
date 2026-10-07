@@ -3,6 +3,15 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.4]
+
+### Changed
+
+- Color picker popup: brightness slider now docks to the right edge so
+  no empty gap sits beside it, bottom padding tightened to hug the
+  action buttons, and the screen-color button uses a proper droplet
+  icon matching the app icon set.
+
 ## [1.0.3]
 
 ### Changed
