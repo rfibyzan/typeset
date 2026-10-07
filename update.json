@@ -1,6 +1,6 @@
 {
-  "version": "1.0.8",
-  "url": "https://github.com/rfibyzan/typeset/releases/download/v1.0.8/Typeset-1.0.8.zip",
-  "notes": "Native toast matches mockup, snug above taskbar.",
-  "size": 1081280
+  "version": "1.0.9",
+  "url": "https://github.com/rfibyzan/typeset/releases/download/v1.0.9/Typeset-1.0.9.zip",
+  "notes": "Toast type weight, switcher cleanup.",
+  "size": 1080997
 }
