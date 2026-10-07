@@ -1,6 +1,6 @@
 {
-  "version": "1.0.6",
-  "url": "https://github.com/rfibyzan/typeset/releases/download/v1.0.6/Typeset-1.0.6.zip",
-  "notes": "Custom title bar, toast scope fix, palette label fix.",
-  "size": 1079909
+  "version": "1.0.7",
+  "url": "https://github.com/rfibyzan/typeset/releases/download/v1.0.7/Typeset-1.0.7.zip",
+  "notes": "Custom font dropdown, toast anchoring.",
+  "size": 1081273
 }
