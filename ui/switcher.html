@@ -200,7 +200,9 @@ function renderSwitcher() {
   if (!swRows.length) {
     var em = document.createElement('div');
     em.className = 'sw-empty';
-    em.innerText = 'No matching presets';
+    em.innerText = (Object.keys(presets || {}).length === 0)
+      ? 'No presets yet. Create one in Typeset.'
+      : 'No matching presets';
     list.appendChild(em);
   }
   if (swIndex >= swRows.length) swIndex = Math.max(0, swRows.length - 1);

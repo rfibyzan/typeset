@@ -1,8 +1,8 @@
 ﻿// Auto-generated configuration data from typeset.ini
 window.initialData = {
-  activePreset: "Kode Sisipan",
-  theme: "light",
-  appVersion: "1.0.11",
+  activePreset: "Laprak",
+  theme: "dark",
+  appVersion: "1.0.12",
   shortcuts: {
     Format: "Ctrl+Shift+F",
     Switcher: "Win+Shift+F",
@@ -13,9 +13,9 @@ window.initialData = {
   },
   alwaysOnTop: false,
   lastUsed: {
-    "TP": "20261007121200",
-    "Laprak": "20261007121143",
-    "Kode Sisipan": "20261007121203",
+    "TP": "20261007122311",
+    "Laprak": "20261007123048",
+    "Kode Sisipan": "20261007122309",
     "Kode": "20261006225133"
   },
   presets: {
@@ -29,7 +29,7 @@ window.initialData = {
     },
     "TP": {
       font: "Times New Roman", size: "12", spacing: "1.5", before: "0", after: "0", color: "#4472c4", align: "Justify", style: "none",
-      use: { font: true, size: true, style: true, color: true, spacing: true, align: true, before: true, after: true },
+      use: { font: false, size: true, style: true, color: true, spacing: true, align: true, before: true, after: true },
       captions: {
         "tabel": { font: "Times New Roman", size: "10", align: "Left", before: "0", after: "0", color: "#000000", use: { font: true, size: true, color: true, align: true, before: true, after: true } },
         "gambar": { font: "Times New Roman", size: "10", align: "Center", before: "0", after: "0", color: "#000000", use: { font: true, size: true, color: true, align: true, before: true, after: true } }

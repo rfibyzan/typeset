@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -578,6 +578,11 @@
         <button type="button" class="btn" onclick="showRenamePreset()" title="Rename preset">Rename</button>
         <button type="button" class="btn btn-danger" onclick="showDeletePop()" title="Delete preset">Delete</button>
       </div>
+      <div id="presetEmpty" class="hidden" style="text-align:center; padding:8px 10px 10px;">
+        <div style="font-size:12px; font-weight:600; margin-bottom:2px;">No presets yet</div>
+        <div class="note" style="padding:0 0 8px;">Create your first preset to start formatting.</div>
+        <button type="button" class="btn btn-primary" onclick="showAddPreset()">Create preset</button>
+      </div>
       <div class="inline-editor hidden" id="presetEditor">
         <input id="newPresetName" class="form-input" placeholder="New preset name…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter'){confirmAddPreset();}else if(event.key==='Escape'){cancelAddPreset();}" />
         <button type="button" class="btn btn-primary" onclick="confirmAddPreset()">Save</button>
@@ -809,6 +814,19 @@
         <h2>Global Keyboard Shortcuts</h2>
         <div id="shortcutRows"></div>
         <div class="note">Click Edit, then press a new shortcut. Shortcuts already in use will be rejected with a warning.</div>
+      </div>
+
+      <div class="card">
+        <h2>Preset Backup</h2>
+        <div class="row" style="padding-top:8px; padding-bottom:8px;">
+          <span class="row-name">Share between PCs</span>
+          <div class="ctl" style="gap:6px;">
+            <button type="button" class="btn" onclick="exportPresets()" title="Save presets to a JSON file">Export</button>
+            <button type="button" class="btn" onclick="document.getElementById('importFile').click()" title="Merge presets from a JSON file">Import</button>
+            <input type="file" id="importFile" accept=".json,application/json" style="display:none;" onchange="importPresetsFile(this)" />
+          </div>
+        </div>
+        <div class="note">Export saves presets to a JSON file (keep it in your cloud drive to sync PCs). Import merges it here.</div>
       </div>
 
       <div class="card reset-card" style="position:relative;">
@@ -1200,14 +1218,25 @@ function switchTab(tab) {
 function rebuildPresetDropdown(selectKey) {
   var sel = $('presetSelect');
   sel.innerHTML = '';
-  Object.keys(state.presets).forEach(function(k) {
+  var keys = Object.keys(state.presets);
+  keys.forEach(function(k) {
     var opt = document.createElement('option');
     opt.value = k;
     opt.innerText = k;
     if (k === selectKey) opt.selected = true;
     sel.appendChild(opt);
   });
-  if (!selectKey && sel.options.length) sel.selectedIndex = 0;
+  var empty = keys.length === 0;
+  $('presetRowView').classList.toggle('hidden', empty);
+  $('presetEmpty').classList.toggle('hidden', !empty);
+  if (!empty) {
+    if (!selectKey && sel.options.length) sel.selectedIndex = 0;
+    if (!state.presets[state.activePreset]) state.activePreset = sel.value;
+    $('lblActivePreset').innerText = state.activePreset;
+  } else {
+    state.activePreset = '';
+    $('lblActivePreset').innerText = '-';
+  }
   onPresetChange(false);
 }
 
@@ -1264,6 +1293,7 @@ function showAddPreset() {
   presetEditorMode = 'add';
   renameTarget = null;
   $('presetRowView').classList.add('hidden');
+  $('presetEmpty').classList.add('hidden');
   $('presetEditor').classList.remove('hidden');
   var inp = $('newPresetName');
   inp.value = '';
@@ -1287,7 +1317,12 @@ function cancelAddPreset() {
   presetEditorMode = 'add';
   renameTarget = null;
   $('presetEditor').classList.add('hidden');
-  $('presetRowView').classList.remove('hidden');
+  if (Object.keys(state.presets).length === 0) {
+    $('presetRowView').classList.add('hidden');
+    $('presetEmpty').classList.remove('hidden');
+  } else {
+    $('presetRowView').classList.remove('hidden');
+  }
 }
 
 function confirmAddPreset() {
@@ -1298,7 +1333,18 @@ function confirmAddPreset() {
     return;
   }
   if (presetNameTaken(name)) { showToast('Preset name already exists: ' + name); return; }
-  var src = clone(ensurePreset(curPresetName()));
+  var srcName = curPresetName();
+  var src;
+  if (srcName && state.presets[srcName]) {
+    src = clone(ensurePreset(srcName));
+  } else {
+    delete state.presets[''];
+    src = {
+      font: 'Times New Roman', size: '12', spacing: '1.5', before: '0', after: '0',
+      color: '#000000', align: 'Justify', style: 'none', use: defaultUse8(),
+      captions: { tabel: defaultCap('Left'), gambar: defaultCap('Center') }
+    };
+  }
   if (!src.font) src.font = 'Times New Roman';
   state.presets[name] = src;
   snapshot(name);
@@ -1337,7 +1383,7 @@ function confirmRenamePreset(name) {
 
 function showDeletePop() {
   var name = curPresetName();
-  if (Object.keys(state.presets).length <= 1) { showToast('At least 1 preset must remain.'); return; }
+  if (!name || !state.presets[name]) { showToast('No presets to delete.'); return; }
   $('deletePopText').innerText = 'Delete preset "' + name + '"?';
   $('deletePop').classList.remove('hidden');
 }
@@ -1349,15 +1395,101 @@ function confirmDeletePreset() {
   hideDeletePop();
   delete state.presets[name];
   delete snapshots[name];
-  var next = Object.keys(state.presets)[0];
-  if (state.activePreset === name) {
-    state.activePreset = next;
-    $('lblActivePreset').innerText = next;
-  }
+  var keys = Object.keys(state.presets);
+  var next = keys.length ? keys[0] : '';
+  state.activePreset = next;
+  $('lblActivePreset').innerText = next || '-';
   rebuildPresetDropdown(next);
   sendToHost({ action: 'deletePreset', name: name });
   showToast('Preset deleted: ' + name);
   refreshDirty();
+}
+
+function exportPresets() { sendToHost({ action: 'exportPresets' }); }
+
+function parsePackPreset(pack) {
+  var p = { font: 'Times New Roman', size: '12', spacing: '1.5', before: '0', after: '0', color: '#000000', align: 'Left', style: 'none', use: defaultUse8() };
+  if (typeof pack !== 'string') return p;
+  var d = pack.split('|');
+  if (d.length >= 9) {
+    p.font = (d[0] || '').trim() || p.font;
+    p.size = (d[1] || '').trim() || p.size;
+    p.spacing = (d[2] || '').trim() || p.spacing;
+    p.before = (d[3] || '').trim() || p.before;
+    p.after = (d[4] || '').trim() || p.after;
+    p.color = (d[5] || '').trim() || p.color;
+    p.align = (d[6] || '').trim() || p.align;
+    var fl = (d[7] || '').trim(), keys = ['font', 'size', 'style', 'color', 'spacing', 'align', 'before', 'after'];
+    for (var i = 0; i < 8 && i < fl.length; i++) p.use[keys[i]] = fl.charAt(i) === '1';
+    var st = (d[8] || '').trim().toLowerCase();
+    p.style = (st === 'b' || st === 'i' || st === 'bi') ? st : 'none';
+  }
+  return p;
+}
+
+function parsePackCaption(pack, defAlign) {
+  var c = defaultCap(defAlign);
+  if (typeof pack !== 'string' || !pack) return c;
+  var d = pack.split('|');
+  if (d.length >= 7 && /^[01]{6}$/.test((d[6] || '').trim())) {
+    c.font = (d[0] || '').trim() || c.font;
+    c.size = (d[1] || '').trim() || c.size;
+    c.align = (d[2] || '').trim() || c.align;
+    c.before = (d[3] || '').trim() || c.before;
+    c.after = (d[4] || '').trim() || c.after;
+    c.color = (d[5] || '').trim() || c.color;
+    var fl = d[6].trim(), keys = ['font', 'size', 'color', 'align', 'before', 'after'];
+    for (var i = 0; i < 6; i++) c.use[keys[i]] = fl.charAt(i) === '1';
+  }
+  return c;
+}
+
+function importPresetsFile(input) {
+  var f = input.files && input.files[0];
+  input.value = '';
+  if (!f || typeof FileReader === 'undefined') return;
+  var rd = new FileReader();
+  rd.onload = function() {
+    var imported = 0, skipped = 0, renamed = 0;
+    try {
+      var j = JSON.parse(String(rd.result).replace(/^\uFEFF/, ''));
+      if (!j || j.app !== 'Typeset' || j.kind !== 'presets' || !j.presets || typeof j.presets !== 'object') throw new Error('bad');
+      Object.keys(j.presets).forEach(function(rawName) {
+        var entry = j.presets[rawName] || {};
+        var name = String(rawName).trim();
+        if (!name) { skipped++; return; }
+        if (presetNameTaken(name)) {
+          var base = name + ' (imported)', n2 = base, k = 2;
+          while (presetNameTaken(n2)) { n2 = base + ' ' + k; k++; }
+          name = n2;
+          renamed++;
+        }
+        var p = parsePackPreset(entry.pack);
+        p.captions = {
+          tabel: parsePackCaption(entry.tabel, 'Left'),
+          gambar: parsePackCaption(entry.gambar, 'Center')
+        };
+        state.presets[name] = p;
+        snapshot(name);
+        sendToHost({ action: 'savePreset', name: name, data: packPreset(name) });
+        imported++;
+      });
+    } catch (e) {
+      showToast('Import failed: not a Typeset backup.');
+      return;
+    }
+    if (!state.presets[state.activePreset]) {
+      var keys = Object.keys(state.presets);
+      if (keys.length) {
+        state.activePreset = keys[0];
+        $('lblActivePreset').innerText = keys[0];
+      }
+    }
+    rebuildPresetDropdown(state.activePreset);
+    showToast('Imported ' + imported + ' preset(s)' + (renamed ? ', ' + renamed + ' renamed' : '') + (skipped ? ', ' + skipped + ' skipped' : '') + '.');
+    refreshDirty();
+  };
+  try { rd.readAsText(f); } catch (e) { showToast('Import failed: cannot read file.'); }
 }
 
 /* ---------- form load/save ---------- */
@@ -2251,8 +2383,7 @@ function applyInitialData() {
     }
   }
   if (!Object.keys(state.presets).length) {
-    ensurePreset('Laprak');
-    ensurePreset('Kode');
+    state.activePreset = '';
   }
   Object.keys(state.presets).forEach(ensurePreset);
 }
@@ -2331,6 +2462,8 @@ window.hideResetPop = hideResetPop;
 window.confirmReset = confirmReset;
 window.saveCurrentPreset = saveCurrentPreset;
 window.revertChanges = revertChanges;
+window.exportPresets = exportPresets;
+window.importPresetsFile = importPresetsFile;
 window.pickFromScreen = pickFromScreen;
 window.closePalette = closePalette;
 window.showSwitchPop = showSwitchPop;

@@ -3,6 +3,21 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.12]
+
+### Added
+
+- First-run onboarding: fresh installs start with no presets and a
+  guided empty state instead of pre-made ones. Deleting the last
+  preset returns to it.
+- Preset backup: Export saves presets to a JSON file, Import merges
+  one back (name clashes auto-renamed). Keep the file in a cloud
+  drive to share presets between PCs, free, no account needed.
+
+### Changed
+
+- Formatting without any preset guides to creating one first.
+
 ## [1.0.11]
 
 ### Changed

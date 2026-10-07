@@ -197,7 +197,7 @@ InstallAppFonts()
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.11"
+APP_VERSION := "1.0.12"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""
@@ -223,12 +223,9 @@ UpdateOnExitCall(*) {
 try OnExit(UpdateOnExitCall, 1)
 
 if !FileExist(iniFile) {
-    IniWrite("Praktikum", iniFile, "Settings", "ActivePreset")
+    IniWrite("", iniFile, "Settings", "ActivePreset")
     IniWrite("dark", iniFile, "Settings", "Theme")
     IniWrite(1, iniFile, "Settings", "AlwaysOnTop")
-    IniWrite("Times New Roman|12|1.5|0|0|#000000|Justify|11111111|none", iniFile, "Presets", "Praktikum")
-    IniWrite("Courier New|10|1.0|0|0|#000000|Left|11111111|none", iniFile, "Presets", "Kode")
-    IniWrite("Courier New|10|1.0|0|0|#000000|Left|11010000|none", iniFile, "Presets", "Kode Sisipan")
     IniWrite("Times New Roman", iniFile, "CaptionTabel", "Font")
     IniWrite("10", iniFile, "CaptionTabel", "Size")
     IniWrite("Left", iniFile, "CaptionTabel", "Alignment")
@@ -266,18 +263,6 @@ if !FileExist(iniFile) {
         IniWrite("6", iniFile, "CaptionGambar", "SpaceBefore")
         IniWrite("6", iniFile, "CaptionGambar", "SpaceAfter")
         IniWrite("#000000", iniFile, "CaptionGambar", "Color")
-    }
-    try {
-        if (IniRead(iniFile, "Presets", "Kode", "") == "")
-            IniWrite("Courier New|10|1.0|0|0|#000000|Left|11111111|none", iniFile, "Presets", "Kode")
-    } catch {
-        IniWrite("Courier New|10|1.0|0|0|#000000|Left|11111111|none", iniFile, "Presets", "Kode")
-    }
-    try {
-        if (IniRead(iniFile, "Presets", "Kode Sisipan", "") == "")
-            IniWrite("Courier New|10|1.0|0|0|#000000|Left|11010000|none", iniFile, "Presets", "Kode Sisipan")
-    } catch {
-        IniWrite("Courier New|10|1.0|0|0|#000000|Left|11010000|none", iniFile, "Presets", "Kode Sisipan")
     }
     try {
         if (IniRead(iniFile, "Settings", "Theme", "") == "")
@@ -491,7 +476,7 @@ ApplyPresetToWord(presetName := "") {
     if (presetName == "")
         presetName := IniRead(iniFile, "Settings", "ActivePreset", "")
     if (presetName == "") {
-        ShowToast("No active preset selected!")
+        ShowToast("Create a preset in Typeset first.")
         return false
     }
 
@@ -1541,6 +1526,8 @@ ProcessWebCommand(rawJson) {
                         }
                     }
                 }
+            case "exportPresets":
+                ExportPresetsToFile()
             case "startUpdate":
                 updUrl := RegExMatch(rawJson, '`"url`":\s*`"([^`"]+)`"', &mU) ? mU[1] : ""
                 updVer := RegExMatch(rawJson, '`"version`":\s*`"([^`"]+)`"', &mV) ? mV[1] : ""
@@ -1579,6 +1566,52 @@ JsEscape(s) {
     s := StrReplace(s, "`n", "\n")
     s := StrReplace(s, "`r", "")
     return s
+}
+
+; Tulis seluruh preset + caption ke file JSON via dialog simpan.
+ExportPresetsToFile() {
+    sel := FileSelect("S", "Typeset-presets.json", "Save presets as JSON", "JSON (*.json)")
+    if (sel == "")
+        return
+    if (StrLower(SubStr(sel, StrLen(sel) - 4)) != ".json")
+        sel .= ".json"
+    js := "{`"app`":`"Typeset`",`"kind`":`"presets`",`"version`":1,`"exported`":`"" . A_Now . "`",`"presets`":{"
+    first := true
+    try {
+        rawP := IniRead(iniFile, "Presets", , "")
+        Loop Parse, rawP, "`n", "`r" {
+            if (A_LoopField == "")
+                continue
+            p := StrSplit(A_LoopField, "=")
+            if (p.Length < 2)
+                continue
+            name := p[1]
+            pack := IniRead(iniFile, "Presets", name, "")
+            capT := IniRead(iniFile, "Captions_" . name, "Tabel", "")
+            capG := IniRead(iniFile, "Captions_" . name, "Gambar", "")
+            if !first
+                js .= ","
+            first := false
+            js .= "`"" . JsEscape(name) . "`":{`"pack`":`"" . JsEscape(pack) . "`",`"tabel`":`"" . JsEscape(capT) . "`",`"gambar`":`"" . JsEscape(capG) . "`"}"
+        }
+    }
+    js .= "}}"
+    try {
+        f := FileOpen(sel, "w", "UTF-8-RAW")
+        f.Write(js)
+        f.Close()
+        count := 0
+        try {
+            rawC := IniRead(iniFile, "Presets", , "")
+            Loop Parse, rawC, "`n", "`r" {
+                if (A_LoopField != "")
+                    count += 1
+            }
+        }
+        ShowToast("Exported " . count . " preset(s).")
+    } catch {
+        ShowToast("Export failed.")
+    }
 }
 
 PushPresetEvent(name) {

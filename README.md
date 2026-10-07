@@ -17,6 +17,9 @@ each applied only when its toggle is on.
 - **Auto-update**: checks GitHub on launch, downloads in the background
   while you keep working, then self-installs on restart without touching
   your `typeset.ini`.
+- **Preset backup**: Export saves presets to a JSON file, Import merges
+  one back. Keep the file in a cloud drive to share presets between
+  PCs, free, no account needed.
 - **Themes**: dark and light, per-user font list, Always-on-Top option.
 
 ## Install
