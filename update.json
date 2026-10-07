@@ -1,6 +1,6 @@
 {
-  "version": "1.0.12",
-  "url": "https://github.com/rfibyzan/typeset/releases/download/v1.0.12/Typeset-1.0.12.zip",
-  "notes": "Empty-state onboarding, preset backup export/import.",
-  "size": 1205058
+  "version": "1.0.13",
+  "url": "https://github.com/rfibyzan/typeset/releases/download/v1.0.13/Typeset-1.0.13.zip",
+  "notes": "Settings layout fits 640px height.",
+  "size": 1205072
 }
