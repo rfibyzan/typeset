@@ -3,6 +3,13 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.11]
+
+### Changed
+
+- Native toast fades in and out over 180ms instead of popping;
+  focus never leaves the active window.
+
 ## [1.0.10]
 
 ### Added

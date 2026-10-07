@@ -136,12 +136,21 @@ ShowToast(msg, duration := 1200) {
         posX := A_ScreenWidth - w - 20
         posY := A_ScreenHeight - h - 48
     }
-    toastGui.Show("x" . posX . " y" . posY . " NoActivate")
+    toastGui.Show("x" . posX . " y" . posY . " NoActivate Hide")
+    try {
+        DllCall("AnimateWindow", "Ptr", toastGui.Hwnd, "Int", 180, "UInt", 0x80000)
+    } catch {
+        toastGui.Show("x" . posX . " y" . posY . " NoActivate")
+    }
 
     SetTimer(DismissToast, -duration)
 
     DismissToast() {
         if IsObject(toastGui) {
+            try {
+                DllCall("AnimateWindow", "Ptr", toastGui.Hwnd, "Int", 180, "UInt", 0x90000)
+            } catch {
+            }
             try toastGui.Destroy()
             toastGui := ""
         }
@@ -188,7 +197,7 @@ InstallAppFonts()
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.10"
+APP_VERSION := "1.0.11"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""

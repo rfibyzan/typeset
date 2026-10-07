@@ -1,8 +1,8 @@
 ﻿// Auto-generated configuration data from typeset.ini
 window.initialData = {
   activePreset: "Kode Sisipan",
-  theme: "dark",
-  appVersion: "1.0.10",
+  theme: "light",
+  appVersion: "1.0.11",
   shortcuts: {
     Format: "Ctrl+Shift+F",
     Switcher: "Win+Shift+F",
@@ -13,9 +13,9 @@ window.initialData = {
   },
   alwaysOnTop: false,
   lastUsed: {
-    "TP": "20261007115943",
-    "Laprak": "20261007113951",
-    "Kode Sisipan": "20261007115948",
+    "TP": "20261007121200",
+    "Laprak": "20261007121143",
+    "Kode Sisipan": "20261007121203",
     "Kode": "20261006225133"
   },
   presets: {
