@@ -3,6 +3,14 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.8]
+
+### Changed
+
+- Native toast matches the approved mockup (charcoal pill, emerald
+  dot, comfortable padding) and sits snug above the taskbar on the
+  active monitor instead of floating.
+
 ## [1.0.7]
 
 ### Added

@@ -2,7 +2,7 @@
 window.initialData = {
   activePreset: "Kode Sisipan",
   theme: "dark",
-  appVersion: "1.0.7",
+  appVersion: "1.0.8",
   shortcuts: {
     Format: "Ctrl+Shift+F",
     Switcher: "Win+Shift+F",
@@ -13,9 +13,9 @@ window.initialData = {
   },
   alwaysOnTop: false,
   lastUsed: {
-    "TP": "20261006225144",
-    "Laprak": "20261007103314",
-    "Kode Sisipan": "20261007103317",
+    "TP": "20261007110702",
+    "Laprak": "20261007110714",
+    "Kode Sisipan": "20261007110717",
     "Kode": "20261006225133"
   },
   presets: {
