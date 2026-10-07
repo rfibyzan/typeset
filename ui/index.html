@@ -237,6 +237,18 @@
   }
   .combo-wrap .combo-arrow:hover { background: rgba(127, 127, 140, 0.15); }
 
+  /* Font dropdown popover (custom, matches app style) */
+  #fontPop { min-width: 190px; max-height: 212px; padding: 6px; display: flex; flex-direction: column; }
+  #fontPopList { overflow-y: auto; display: flex; flex-direction: column; gap: 1px; }
+  .font-opt {
+    display: block; width: 100%; text-align: left;
+    background: transparent; border: none; color: var(--text);
+    font-size: 12px; font-family: var(--sans);
+    padding: 6px 10px; border-radius: 6px; cursor: pointer;
+  }
+  .font-opt:hover, .font-opt.sel { background: var(--accent-soft); }
+  .font-empty { font-size: 11px; color: var(--subtle); padding: 8px 10px; }
+
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 5px;
     padding: 5px 12px; font-size: 11px; font-weight: 500; font-family: var(--sans);
@@ -600,8 +612,8 @@
         <div class="row" id="rowFont">
           <div class="row-label"><label class="tgl"><input type="checkbox" id="tglUseFont" checked onchange="onToggle('font')" /><span class="sw"></span></label><span class="row-name">Font</span></div>
           <div class="ctl combo-wrap">
-            <input type="text" id="fontInput" list="fontList" class="form-input" placeholder="Type or pick a font…" oninput="onFontInput()" onchange="onFontCommit()" onfocus="this.select()" autocomplete="off" spellcheck="false" />
-            <button type="button" class="combo-arrow" tabindex="-1" onclick="document.getElementById('fontInput').focus()" title="Choose from the font list" aria-label="Choose from the font list"></button>
+            <input type="text" id="fontInput" class="form-input" placeholder="Type or pick a font…" oninput="onFontInput()" onchange="onFontCommit()" onfocus="this.select()" onkeydown="fontInputKey(event,'text')" autocomplete="off" spellcheck="false" />
+            <button type="button" class="combo-arrow" tabindex="-1" onclick="openFontPop('text')" title="Choose from the font list" aria-label="Choose from the font list"></button>
           </div>
         </div>
         <div class="row" id="rowSize">
@@ -694,8 +706,8 @@
         <div class="row" id="rowCapFont">
           <div class="row-label"><label class="tgl"><input type="checkbox" id="tglCapFont" checked onchange="onCapToggle('font')" /><span class="sw"></span></label><span class="row-name">Font</span></div>
           <div class="ctl combo-wrap">
-            <input type="text" id="capFontInput" list="fontList" class="form-input" placeholder="Type or pick a font…" oninput="onCapFontInput()" onchange="onCapFontCommit()" onfocus="this.select()" autocomplete="off" spellcheck="false" />
-            <button type="button" class="combo-arrow" tabindex="-1" onclick="document.getElementById('capFontInput').focus()" title="Choose from the font list" aria-label="Choose from the font list"></button>
+            <input type="text" id="capFontInput" class="form-input" placeholder="Type or pick a font…" oninput="onCapFontInput()" onchange="onCapFontCommit()" onfocus="this.select()" onkeydown="fontInputKey(event,'caption')" autocomplete="off" spellcheck="false" />
+            <button type="button" class="combo-arrow" tabindex="-1" onclick="openFontPop('caption')" title="Choose from the font list" aria-label="Choose from the font list"></button>
           </div>
         </div>
         <div class="row" id="rowCapSize">
@@ -826,6 +838,10 @@
       <span>Unsaved changes</span>
       <button type="button" class="btn btn-primary" onclick="saveCurrentPreset()">Save</button>
       <button type="button" class="btn" onclick="revertChanges()">Revert</button>
+    </div>
+
+    <div class="popover hidden" id="fontPop">
+      <div id="fontPopList"></div>
     </div>
 
     <div class="popover hidden" id="palPop">
@@ -1406,10 +1422,125 @@ function ensureFontOption(fontName) {
   list.appendChild(opt);
 }
 
+/* ---------- custom font dropdown ---------- */
+
+var fontPopFor = null;
+var fontPopIdx = -1;
+var fontPopItems = [];
+
+function allFonts() {
+  var out = [];
+  var list = $('fontList');
+  if (list && list.options) {
+    for (var i = 0; i < list.options.length; i++) {
+      if (list.options[i].value) out.push(list.options[i].value);
+    }
+  }
+  return out;
+}
+
+function fontInputEl(which) { return $(which === 'caption' ? 'capFontInput' : 'fontInput'); }
+
+function openFontPop(which) {
+  closePalette(false);
+  fontPopFor = which;
+  renderFontPop();
+  var pop = $('fontPop');
+  if (pop.parentElement !== document.body) document.body.appendChild(pop);
+  pop.classList.remove('hidden');
+  var inp = fontInputEl(which);
+  if (inp) inp.focus();
+  try {
+    var r = inp.getBoundingClientRect();
+    var pw = Math.max(r.width, 190);
+    pop.style.width = pw + 'px';
+    var pleft = r.left;
+    if (pleft + pw > window.innerWidth - 8) pleft = window.innerWidth - pw - 8;
+    if (pleft < 8) pleft = 8;
+    var ptop = r.bottom + 6;
+    var ph = pop.offsetHeight || 200;
+    if (ptop + ph > window.innerHeight - 8 && r.top - ph - 6 >= 8) ptop = r.top - ph - 6;
+    else if (ptop + ph > window.innerHeight - 8) ptop = Math.max(8, window.innerHeight - ph - 8);
+    pop.style.left = pleft + 'px';
+    pop.style.top = ptop + 'px';
+    pop.style.right = 'auto';
+  } catch (e) {}
+}
+
+function renderFontPop() {
+  var wrap = $('fontPopList');
+  wrap.innerHTML = '';
+  var inp = fontInputEl(fontPopFor);
+  var raw = ((inp && inp.value) || '').trim();
+  var q = raw.toLowerCase();
+  fontPopItems = allFonts().filter(function(f) { return !q || f.toLowerCase().indexOf(q) >= 0; });
+  fontPopIdx = -1;
+  fontPopItems.forEach(function(f, i) {
+    if (fontPopIdx < 0 && f.toLowerCase() === q) fontPopIdx = i;
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'font-opt' + (i === fontPopIdx ? ' sel' : '');
+    b.innerText = f;
+    b.style.fontFamily = '"' + f + '", sans-serif';
+    b.onmousedown = (function(name) {
+      return function(e) { if (e && e.preventDefault) e.preventDefault(); pickFont(name); };
+    })(f);
+    wrap.appendChild(b);
+  });
+  if (!fontPopItems.length) {
+    var d = document.createElement('div');
+    d.className = 'font-empty';
+    d.innerText = raw ? ('No matching font. Press Enter to use "' + raw + '".') : 'No fonts available.';
+    wrap.appendChild(d);
+  }
+}
+
+function closeFontPop() {
+  fontPopFor = null;
+  fontPopIdx = -1;
+  var pop = $('fontPop');
+  if (pop) pop.classList.add('hidden');
+}
+
+function pickFont(name) {
+  var which = fontPopFor;
+  closeFontPop();
+  var inp = fontInputEl(which);
+  if (inp) inp.value = name;
+  if (which === 'caption') onCapFontCommit();
+  else onFontCommit();
+}
+
+function fontInputKey(e, which) {
+  var pop = $('fontPop');
+  var open = pop && !pop.classList.contains('hidden') && fontPopFor === which;
+  if (!e) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (e.preventDefault) e.preventDefault();
+    if (!open) { openFontPop(which); return; }
+    if (!fontPopItems.length) return;
+    fontPopIdx = (fontPopIdx + (e.key === 'ArrowDown' ? 1 : -1) + fontPopItems.length) % fontPopItems.length;
+    var btns = pop.querySelectorAll('.font-opt');
+    for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('sel', i === fontPopIdx);
+    try {
+      if (btns[fontPopIdx] && btns[fontPopIdx].scrollIntoView) btns[fontPopIdx].scrollIntoView({ block: 'nearest' });
+    } catch (err) {}
+  } else if (e.key === 'Enter') {
+    if (open) {
+      if (e.preventDefault) e.preventDefault();
+      if (fontPopIdx >= 0 && fontPopItems[fontPopIdx]) pickFont(fontPopItems[fontPopIdx]);
+      else closeFontPop();
+    }
+  } else if (e.key === 'Escape') {
+    if (open) closeFontPop();
+  }
+}
+
 function onFontInput() {
   var p = ensurePreset(curPresetName());
   p.font = ($('fontInput').value || '').trim();
   refreshDirty();
+  if (fontPopFor === 'text') renderFontPop();
   renderLivePreview();
 }
 
@@ -1601,6 +1732,7 @@ function onCapFontInput() {
   var c = curCaps();
   c.font = ($('capFontInput').value || '').trim();
   refreshDirty();
+  if (fontPopFor === 'caption') renderFontPop();
   renderCaptionPreview();
 }
 
@@ -1991,6 +2123,7 @@ function finishRec(display, arrow) {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     if (!$('palPop').classList.contains('hidden')) { closePalette(false); return; }
+    if (!$('fontPop').classList.contains('hidden')) { closeFontPop(); return; }
     if (!$('deletePop').classList.contains('hidden')) { hideDeletePop(); return; }
     if (!$('resetPop').classList.contains('hidden')) { hideResetPop(); return; }
     if (!$('presetEditor').classList.contains('hidden')) { cancelAddPreset(); return; }
@@ -2018,6 +2151,18 @@ document.addEventListener('click', function(e) {
     var btn = $('colorBtn'), cbtn = $('capColorBtn');
     if (!pop.contains(e.target) && !(btn && btn.contains(e.target)) && !(cbtn && cbtn.contains(e.target))) {
       closePalette(false);
+    }
+  }
+  var fpop = $('fontPop');
+  if (fpop && !fpop.classList.contains('hidden') && fontPopFor) {
+    var fi = fontInputEl(fontPopFor);
+    var arrows = document.querySelectorAll('.combo-arrow');
+    var onArrow = false;
+    for (var i = 0; i < arrows.length; i++) {
+      if (arrows[i].contains(e.target)) { onArrow = true; break; }
+    }
+    if (!fpop.contains(e.target) && !(fi && fi.contains(e.target)) && !onArrow) {
+      closeFontPop();
     }
   }
   if (!$('deletePop').classList.contains('hidden') || !$('switchPop').classList.contains('hidden')) {
@@ -2171,6 +2316,10 @@ window.toggleStyleBtn = toggleStyleBtn;
 window.openPalette = openPalette;
 window.onCapFontInput = onCapFontInput;
 window.onCapFontCommit = onCapFontCommit;
+window.fontInputKey = fontInputKey;
+window.openFontPop = openFontPop;
+window.closeFontPop = closeFontPop;
+window.pickFont = pickFont;
 window.onCapToggle = onCapToggle;
 window.stepCapField = stepCapField;
 window.setCapAlign = setCapAlign;

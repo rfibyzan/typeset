@@ -3,6 +3,19 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.7]
+
+### Added
+
+- Custom font dropdown popover matching the app style, with
+  type-to-filter, arrow-key navigation, Enter to pick, and Esc to
+  close. Shared by the text and caption font pickers.
+
+### Changed
+
+- Native toast anchors to the active monitor work area with wider
+  margins, so it never hugs the screen edge.
+
 ## [1.0.6]
 
 ### Added

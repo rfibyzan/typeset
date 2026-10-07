@@ -93,8 +93,29 @@ ShowToast(msg, duration := 1200) {
     toastGui.Show("AutoSize NoActivate Hide")
     SetRoundedCorners(toastGui.Hwnd)
     toastGui.GetPos(&x, &y, &w, &h)
-    posX := A_ScreenWidth - w - 20
-    posY := A_ScreenHeight - h - 60
+    try {
+        mx := 0, my := 0
+        MouseGetPos(&mx, &my)
+        mon := 1
+        try {
+            nMon := MonitorGetCount()
+            Loop nMon {
+                L := 0, T := 0, R := 0, B := 0
+                MonitorGetWorkArea(A_Index, &L, &T, &R, &B)
+                if (mx >= L && mx < R && my >= T && my < B) {
+                    mon := A_Index
+                    break
+                }
+            }
+        }
+        WL := 0, WT := 0, WR := 0, WB := 0
+        MonitorGetWorkArea(mon, &WL, &WT, &WR, &WB)
+        posX := WR - w - 32
+        posY := WB - h - 84
+    } catch {
+        posX := A_ScreenWidth - w - 32
+        posY := A_ScreenHeight - h - 84
+    }
     toastGui.Show("x" . posX . " y" . posY . " NoActivate")
 
     SetTimer(DismissToast, -duration)
@@ -145,7 +166,7 @@ if (FileExist(iniFile) && FileExist(oldIniFile)) {
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.6"
+APP_VERSION := "1.0.7"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""
