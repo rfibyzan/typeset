@@ -3,6 +3,24 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.14]
+
+### Added
+
+- Toast variants: success (emerald), error (rose, longer), info (gray),
+  with screen-reader roles.
+- Dirty bar Save hints Ctrl+S; Esc reverts when nothing else is open.
+- Active preset badge opens the preset switcher.
+
+### Fixed
+
+- Web toast timer resets so rapid toasts no longer kill each other.
+- Native toast timer can no longer delete a newer toast early.
+- Toast lifts above the dirty bar instead of covering Save/Revert.
+- Mislabeled Caption After stepper, leftover Indonesian toast text.
+- Low-contrast note text raised to AA-friendly grays; small text to
+  11px minimum; off rows dim only their controls.
+
 ## [1.0.13]
 
 ### Fixed

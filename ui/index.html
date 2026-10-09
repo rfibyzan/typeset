@@ -15,7 +15,7 @@
     --border2: #26262e;
     --text: #f5f5f7;
     --muted: #a1a1aa;
-    --subtle: #63636b;
+    --subtle: #8a8a93;
     --dim: #787b89;
     --accent: #10b981;
     --accent-soft: rgba(16, 185, 129, 0.14);
@@ -37,7 +37,7 @@
     --border2: #d2d2d8;
     --text: #1d1d1f;
     --muted: #6e6e73;
-    --subtle: #aeaeb2;
+    --subtle: #76767c;
     --dim: #8e8e93;
     --accent: #0a9b6c;
     --accent-soft: rgba(10, 155, 108, 0.12);
@@ -126,9 +126,12 @@
     background: rgba(52, 211, 153, 0.12);
     border: 1px solid rgba(52, 211, 153, 0.35);
     border-radius: 9999px;
-    font-size: 11.5px; font-weight: 600;
+    font-size: 11.5px; font-weight: 600; font-family: var(--sans);
     color: #6EE7B7;
+    cursor: pointer;
   }
+  .active-badge:hover { background: rgba(52, 211, 153, 0.2); }
+  button.active-badge { appearance: none; -webkit-appearance: none; }
 
   .page-title { font-size: 20px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; }
   .page-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
@@ -155,7 +158,7 @@
     flex-shrink: 0;
   }
   .card h2 {
-    font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
     text-transform: uppercase; color: var(--muted);
     padding: 7px 14px 0;
   }
@@ -166,8 +169,8 @@
   .row + .row { border-top: 1px solid var(--border); }
   .row-label { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .row-name { font-size: 12px; font-weight: 500; white-space: nowrap; }
-  .row.off { opacity: 0.45; }
-  .row.off .ctl { pointer-events: none; }
+  .row.off .ctl { opacity: 0.4; pointer-events: none; }
+  .row.off .row-name { color: var(--muted); }
   .ctl { display: flex; align-items: center; gap: 6px; }
 
   /* Toggle switch */
@@ -348,15 +351,13 @@
     position: fixed; bottom: 18px; left: 50%;
     transform: translateX(-50%) translateY(80px); opacity: 0;
     display: inline-flex; align-items: center; gap: 8px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 45%, rgba(0,0,0,0.28)), rgba(11,11,13,0.72);
+    background: #141416;
     color: #f5f5f7;
-    -webkit-backdrop-filter: blur(20px) saturate(1.5);
-    backdrop-filter: blur(20px) saturate(1.5);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     padding: 7px 16px; border-radius: 10px;
     font-size: 12px; font-weight: 500; font-family: var(--sans);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 12px 30px rgba(0, 0, 0, 0.55);
-    transition: all 0.25s ease; pointer-events: none; z-index: 100;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 10px 24px -3px rgba(0, 0, 0, 0.7);
+    transition: opacity 0.25s ease, transform 0.25s ease; pointer-events: none; z-index: 100;
     white-space: nowrap;
   }
   .toast::before {
@@ -364,6 +365,8 @@
     width: 7px; height: 7px; border-radius: 50%;
     background: var(--accent); flex-shrink: 0;
   }
+  .toast[data-kind="error"]::before { background: var(--danger); }
+  .toast[data-kind="info"]::before { background: var(--muted); }
   body.light .toast { background: #1d1d1f; color: #fff; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -476,7 +479,7 @@
   .upd-title { font-size: 12.5px; font-weight: 700; color: var(--text); white-space: nowrap; }
   .upd-ver { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
   .upd-ver .upd-pct { color: var(--accent); font-weight: 500; }
-  .upd-note { font-size: 10px; color: var(--subtle); margin-top: 2px; }
+  .upd-note { font-size: 11px; color: var(--subtle); margin-top: 2px; }
   .upd-actions { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
   .btn-white {
     background: #f5f5f7; border: 1px solid transparent; color: #0b0b0d;
@@ -527,7 +530,7 @@
   .sc-row.recording { background: var(--accent-soft); }
   .sc-row.recording .sc-combo { animation: pulse 1s infinite; }
   @keyframes pulse { 50% { opacity: 0.45; } }
-  .note { font-size: 10.5px; color: var(--subtle); padding: 6px 14px 8px; }
+  .note { font-size: 11px; color: var(--subtle); padding: 6px 14px 8px; }
   .reset-card { border-color: rgba(248, 113, 113, 0.3); }
   .app-ver {
     text-align: center; font-family: var(--mono);
@@ -566,7 +569,7 @@
       <div class="brand">
         <svg class="brand-logo" viewBox="0 0 512 512" aria-hidden="true"><rect x="32" y="32" width="448" height="448" rx="100" fill="#101115"/><rect x="120" y="148" width="190" height="44" rx="22" fill="#f5f5f7"/><rect x="326" y="148" width="66" height="44" rx="22" fill="#10b981"/><rect x="234" y="210" width="44" height="174" rx="22" fill="#d4d4d8"/></svg>
         <span class="brand-title">Typeset</span>
-        <span class="active-badge" id="badgeActivePreset"><svg width="13" height="13" viewBox="0 0 24 24" style="color:#6EE7B7;flex-shrink:0;" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg><span>ACTIVE: <strong id="lblActivePreset">Laprak</strong></span></span>
+        <button type="button" class="active-badge" id="badgeActivePreset" onclick="openSwitcher()" title="Select preset (Win+Shift+F)"><svg width="13" height="13" viewBox="0 0 24 24" style="color:#6EE7B7;flex-shrink:0;" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg><span>ACTIVE: <strong id="lblActivePreset">Laprak</strong></span></button>
       </div>
       <div class="win-btns">
         <button type="button" class="win-btn" onclick="winMin()" title="Minimize" aria-label="Minimize"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="1.5" y1="6" x2="10.5" y2="6"/></svg></button>
@@ -756,7 +759,7 @@
         <div class="row" id="rowCapAfter">
           <div class="row-label"><label class="tgl"><input type="checkbox" id="tglCapAfter" checked onchange="onCapToggle('after')" /><span class="sw"></span></label><span class="row-name">After</span></div>
           <div class="ctl stepper">
-            <button type="button" onclick="stepCapField('after',-1)" title="Increase">−</button>
+            <button type="button" onclick="stepCapField('after',-1)" title="Decrease">−</button>
             <span class="val" id="capAfterVal">3 pt</span>
             <button type="button" onclick="stepCapField('after',1)" title="Increase">+</button>
           </div>
@@ -851,12 +854,12 @@
       <div class="app-ver" id="appVer">Typeset v1.0.0 &bull; <button type="button" onclick="openChangelog()" title="View release notes on GitHub">View Changelog</button> &bull; <button type="button" onclick="manualCheck()" title="Check for updates now">Check for updates</button></div>
     </section>
 
-    <div id="toast" class="toast"><span id="toastMsg">Tersimpan</span></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMsg">Saved</span></div>
 
     <div id="dirtyBar" class="dirty-bar">
       <span class="dot"></span>
       <span>Unsaved changes</span>
-      <button type="button" class="btn btn-primary" onclick="saveCurrentPreset()">Save</button>
+      <button type="button" class="btn btn-primary" onclick="saveCurrentPreset()" title="Save (Ctrl+S)">Save <kbd style="font-family:var(--mono); font-size:9px; opacity:0.7;">Ctrl+S</kbd></button>
       <button type="button" class="btn" onclick="revertChanges()">Revert</button>
     </div>
 
@@ -1079,7 +1082,7 @@ function manualCheck() {
   update.dismissed = false;
   update.dismissedFor = '';
   manualCheckPending = true;
-  showToast('Checking for updates...');
+  showToast('Checking for updates...', 'info');
   checkForUpdate();
 }
 
@@ -1104,7 +1107,7 @@ function checkForUpdate() {
       var wasManual = manualCheckPending;
       manualCheckPending = false;
       if (!j || typeof j.version !== 'string' || typeof j.url !== 'string') {
-        if (wasManual) showToast('Update check failed. Try again.');
+        if (wasManual) showToast('Update check failed. Try again.', 'error');
         return;
       }
       if (cmpVer(j.version, update.current) > 0) {
@@ -1121,12 +1124,12 @@ function checkForUpdate() {
         }
         renderUpdate();
       } else if (wasManual) {
-        showToast('You are up to date.');
+        showToast('You are up to date.', 'info');
       }
     }).catch(function() {
       if (manualCheckPending) {
         manualCheckPending = false;
-        showToast('Update check failed. Try again.');
+        showToast('Update check failed. Try again.', 'error');
       }
     });
   } catch (e) {}
@@ -1175,7 +1178,10 @@ function dirtyPresetName() {
   return null;
 }
 function refreshDirty() {
-  $('dirtyBar').classList.toggle('show', dirtyPresetName() !== null);
+  var dirty = dirtyPresetName() !== null;
+  $('dirtyBar').classList.toggle('show', dirty);
+  var tst = $('toast');
+  if (tst) tst.style.bottom = dirty ? '70px' : '';
 }
 
 /* ---------- host bridge ---------- */
@@ -1187,11 +1193,14 @@ function sendToHost(payload) {
   document.title = 'AHK_MSG:' + JSON.stringify(payload) + '|~TS~|' + Date.now();
 }
 
-function showToast(text) {
+function showToast(text, kind) {
   $('toastMsg').innerText = text;
   var t = $('toast');
+  t.dataset.kind = kind || 'ok';
+  t.setAttribute('role', (kind === 'error') ? 'alert' : 'status');
   t.classList.add('show');
-  setTimeout(function() { t.classList.remove('show'); }, 1800);
+  try { clearTimeout(t._timer); } catch (e) {}
+  t._timer = setTimeout(function() { t.classList.remove('show'); }, (kind === 'error') ? 3500 : 1800);
 }
 
 /* ---------- tabs ---------- */
@@ -1329,12 +1338,12 @@ function cancelAddPreset() {
 
 function confirmAddPreset() {
   var name = ($('newPresetName').value || '').trim();
-  if (!name) { showToast('Preset name cannot be empty'); return; }
+  if (!name) { showToast('Preset name cannot be empty', 'error'); return; }
   if (presetEditorMode === 'rename') {
     confirmRenamePreset(name);
     return;
   }
-  if (presetNameTaken(name)) { showToast('Preset name already exists: ' + name); return; }
+  if (presetNameTaken(name)) { showToast('Preset name already exists: ' + name, 'error'); return; }
   var srcName = curPresetName();
   var src;
   if (srcName && state.presets[srcName]) {
@@ -1363,7 +1372,7 @@ function confirmRenamePreset(name) {
   var old = renameTarget;
   if (!old || !state.presets[old]) { cancelAddPreset(); return; }
   if (name === old) { cancelAddPreset(); return; }
-  if (presetNameTaken(name, old)) { showToast('Preset name already exists: ' + name); return; }
+  if (presetNameTaken(name, old)) { showToast('Preset name already exists: ' + name, 'error'); return; }
   state.presets[name] = state.presets[old];
   delete state.presets[old];
   if (snapshots[old]) {
@@ -1385,7 +1394,7 @@ function confirmRenamePreset(name) {
 
 function showDeletePop() {
   var name = curPresetName();
-  if (!name || !state.presets[name]) { showToast('No presets to delete.'); return; }
+  if (!name || !state.presets[name]) { showToast('No presets to delete.', 'error'); return; }
   $('deletePopText').innerText = 'Delete preset "' + name + '"?';
   $('deletePop').classList.remove('hidden');
 }
@@ -1477,7 +1486,7 @@ function importPresetsFile(input) {
         imported++;
       });
     } catch (e) {
-      showToast('Import failed: not a Typeset backup.');
+      showToast('Import failed: not a Typeset backup.', 'error');
       return;
     }
     if (!state.presets[state.activePreset]) {
@@ -1491,7 +1500,7 @@ function importPresetsFile(input) {
     showToast('Imported ' + imported + ' preset(s)' + (renamed ? ', ' + renamed + ' renamed' : '') + (skipped ? ', ' + skipped + ' skipped' : '') + '.');
     refreshDirty();
   };
-  try { rd.readAsText(f); } catch (e) { showToast('Import failed: cannot read file.'); }
+  try { rd.readAsText(f); } catch (e) { showToast('Import failed: cannot read file.', 'error'); }
 }
 
 /* ---------- form load/save ---------- */
@@ -2098,7 +2107,7 @@ function pickFromScreen() {
       }).catch(function() {});
     } catch (e) {}
   } else {
-    showToast('Eyedropper not supported here');
+    showToast('Eyedropper not supported here', 'error');
   }
 }
 
@@ -2236,7 +2245,7 @@ function finishRec(display, arrow) {
     var mods = display;
     var others = ['format', 'switcher', 'capTable', 'capFig', 'menu'].map(function(x) { return normCombo(state.shortcuts[x]); });
     var dup = others.some(function(o) { return o === normCombo(mods + '+Right') || o === normCombo(mods + '+Left'); });
-    if (dup) { showToast('Shortcut already in use'); return; }
+    if (dup) { showToast('Shortcut already in use', 'error'); return; }
     state.shortcuts.heading = mods;
   } else {
     var mine = normCombo(display);
@@ -2244,7 +2253,7 @@ function finishRec(display, arrow) {
       if (d.id === id || d.id === 'heading') return false;
       return normCombo(state.shortcuts[d.id]) === mine;
     }) || normCombo(state.shortcuts.heading + '+Right') === mine || normCombo(state.shortcuts.heading + '+Left') === mine;
-    if (clash) { showToast('Shortcut already in use'); return; }
+    if (clash) { showToast('Shortcut already in use', 'error'); return; }
     state.shortcuts[id] = display;
   }
   renderShortcutRows();
@@ -2255,6 +2264,13 @@ function finishRec(display, arrow) {
 /* ---------- global keys ---------- */
 
 document.addEventListener('keydown', function(e) {
+  if ((e.key === 's' || e.key === 'S') && (e.ctrlKey || e.metaKey) && !e.altKey) {
+    if (dirtyPresetName() !== null) {
+      e.preventDefault();
+      saveCurrentPreset();
+      return;
+    }
+  }
   if (e.key === 'Escape') {
     if (!$('palPop').classList.contains('hidden')) { closePalette(false); return; }
     if (!$('fontPop').classList.contains('hidden')) { closeFontPop(); return; }
@@ -2262,13 +2278,15 @@ document.addEventListener('keydown', function(e) {
     if (!$('resetPop').classList.contains('hidden')) { hideResetPop(); return; }
     if (!$('presetEditor').classList.contains('hidden')) { cancelAddPreset(); return; }
     if (recId) { stopRec(); return; }
+    if (!$('switchPop').classList.contains('hidden')) { hideSwitchPop(); return; }
+    if (dirtyPresetName() !== null) { revertChanges(); return; }
   }
   if (recId) {
     e.preventDefault();
     e.stopPropagation();
     var r = eventToDisplay(e, recId);
-    if (r.error) { showToast(r.error); return; }
-    if (recId === 'heading' && !r.arrow) { showToast('Heading requires an arrow key'); return; }
+    if (r.error) { showToast(r.error, 'error'); return; }
+    if (recId === 'heading' && !r.arrow) { showToast('Heading requires an arrow key', 'error'); return; }
     finishRec(r.display, r.arrow);
     return;
   }
@@ -2403,6 +2421,7 @@ function titlebarDrag(e) {
 
 function winMin() { sendToHost({ action: 'winMin' }); }
 function winClose() { sendToHost({ action: 'winClose' }); }
+function openSwitcher() { sendToHost({ action: 'openSwitcher' }); }
 
 function wireTitlebar() {
   var h = $('appHeader');
@@ -2479,6 +2498,7 @@ window.openChangelog = openChangelog;
 window.manualCheck = manualCheck;
 window.winMin = winMin;
 window.winClose = winClose;
+window.openSwitcher = openSwitcher;
 window.renderUpdate = renderUpdate;
 
 /* ---------- switch guard popover ---------- */

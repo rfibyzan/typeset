@@ -93,8 +93,16 @@ InstallAppFonts() {
 ; ==========================================================
 ; FUNGSI NOTIFIKASI TOAST MODERN (HUD / OSD)
 ; ==========================================================
-ShowToast(msg, duration := 1200) {
+ShowToast(msg, kind := "ok", duration := 0) {
     static toastGui := ""
+    static dismissFn := ""
+    if (duration == 0)
+        duration := (kind == "error") ? 3500 : 1200
+    dotColor := (kind == "error") ? "F87171" : (kind == "info" ? "A1A1AA" : "10B981")
+    if IsObject(dismissFn) {
+        try SetTimer(dismissFn, 0)
+        dismissFn := ""
+    }
     if IsObject(toastGui) {
         try toastGui.Destroy()
         toastGui := ""
@@ -105,7 +113,7 @@ ShowToast(msg, duration := 1200) {
     toastGui.MarginX := 16
     toastGui.MarginY := 10
 
-    toastGui.SetFont("s8 c10B981", "Segoe UI Symbol")
+    toastGui.SetFont("s8 c" . dotColor, "Segoe UI Symbol")
     toastGui.Add("Text", "", Chr(0x25CF))
     toastGui.SetFont("s9 w600 cFFFFFF", "Geist")
     toastGui.Add("Text", "ys x+8", msg)
@@ -143,6 +151,7 @@ ShowToast(msg, duration := 1200) {
         toastGui.Show("x" . posX . " y" . posY . " NoActivate")
     }
 
+    dismissFn := DismissToast
     SetTimer(DismissToast, -duration)
 
     DismissToast() {
@@ -154,12 +163,13 @@ ShowToast(msg, duration := 1200) {
             try toastGui.Destroy()
             toastGui := ""
         }
+        dismissFn := ""
     }
 }
 
 ; Toast native hanya tampil bila window utama tertutup atau diminimize.
 ; Bila window terbuka, notifikasi web di dalam window yang tampil.
-Notify(msg) {
+Notify(msg, kind := "ok") {
     global webGui
     try {
         if IsObject(webGui) {
@@ -173,7 +183,7 @@ Notify(msg) {
         }
     } catch {
     }
-    ShowToast(msg)
+    ShowToast(msg, kind)
 }
 
 ; ==========================================================
@@ -197,7 +207,7 @@ InstallAppFonts()
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.13"
+APP_VERSION := "1.0.14"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""
@@ -482,13 +492,13 @@ ApplyPresetToWord(presetName := "") {
 
     rawConfig := IniRead(iniFile, "Presets", presetName, "")
     if (rawConfig == "") {
-        ShowToast("Preset '" . presetName . "' not found!")
+        ShowToast("Preset '" . presetName . "' not found!", "error")
         return false
     }
 
     cfg := ParsePresetConfig(rawConfig)
     if !IsObject(cfg) {
-        ShowToast("Incomplete preset configuration!")
+        ShowToast("Incomplete preset configuration!", "error")
         return false
     }
 
@@ -538,7 +548,7 @@ ApplyPresetToWord(presetName := "") {
             EndWordUndo(wordApp, undoStarted)
         }
     } catch {
-        ShowToast("Word not detected or no text selected.")
+        ShowToast("Word not detected or no text selected.", "error")
         return false
     }
 }
@@ -601,7 +611,7 @@ ApplyCaptionFormat(captionType) {
             EndWordUndo(wordApp, undoStarted)
         }
     } catch {
-        ShowToast("Word not detected or no text selected.")
+        ShowToast("Word not detected or no text selected.", "error")
     }
 }
 
@@ -852,7 +862,7 @@ ShowPresetSwitcher() {
         SetTimer(WatchSwitcherFocus, 200)
     } catch as err {
         try CloseSwitcherGui("open-catch")
-        ShowToast("Failed to open switcher")
+        ShowToast("Failed to open switcher", "error")
     }
 
     SwTryFill() {
@@ -1062,7 +1072,7 @@ CycleHeading(direction) {
         label := (nextLevel == 0) ? "Normal" : "Heading " . nextLevel
         ShowToast("Style: " . label)
     } catch as err {
-        ShowToast("Failed: " . err.Message)
+        ShowToast("Failed: " . err.Message, "error")
     }
 }
 
@@ -1089,7 +1099,7 @@ ShowModernConfigUI() {
 
     uiPath := A_ScriptDir . "\ui\index.html"
     if !FileExist(uiPath) {
-        ShowToast("UI file not found: ui\index.html")
+        ShowToast("UI file not found: ui\index.html", "error")
         return
     }
 
@@ -1132,7 +1142,7 @@ ShowModernConfigUI() {
         }
         try webGui.Destroy()
         webGui := "", wvc := "", activeWv := ""
-        ShowToast("Failed to open Modern UI: " . err.Message)
+        ShowToast("Failed to open Modern UI: " . err.Message, "error")
     }
 }
 
@@ -1356,6 +1366,8 @@ ProcessWebCommand(rawJson) {
                 }
             case "closeSwitcher":
                 CloseSwitcherGui("ipc")
+            case "openSwitcher":
+                ShowPresetSwitcher()
             case "savePreset":
                 if RegExMatch(rawJson, '`"name`":\s*`"([^`"]+)`"', &mName) {
                     name := mName[1]
@@ -1447,7 +1459,7 @@ ProcessWebCommand(rawJson) {
                 if (sid == "Heading") {
                     mods := HeadingModsToCombo(disp)
                     if (mods == "") {
-                        Notify("Invalid heading shortcut")
+                        Notify("Invalid heading shortcut", "error")
                     } else {
                         dupH := false
                         for k, v in CurCombos {
@@ -1455,16 +1467,16 @@ ProcessWebCommand(rawJson) {
                                 dupH := true
                         }
                         if (dupH) {
-                            Notify("Shortcut already in use")
+                            Notify("Shortcut already in use", "error")
                         } else if (RebindShortcut("Heading", disp)) {
                             IniWrite(disp, iniFile, "Shortcuts", "Heading")
                         } else {
-                            Notify("Failed to bind shortcut")
+                            Notify("Failed to bind shortcut", "error")
                         }
                     }
                 } else if (sid == "Format" || sid == "Switcher" || sid == "CapTable" || sid == "CapFig" || sid == "Menu") {
                     if (disp == "") {
-                        Notify("Empty shortcut")
+                        Notify("Empty shortcut", "error")
                     } else {
                         combo := ShortcutToCombo(disp)
                         dup := false
@@ -1475,11 +1487,11 @@ ProcessWebCommand(rawJson) {
                             }
                         }
                         if (combo == "" || dup) {
-                            Notify("Invalid shortcut / already in use")
+                            Notify("Invalid shortcut / already in use", "error")
                         } else if (RebindShortcut(sid, disp)) {
                             IniWrite(disp, iniFile, "Shortcuts", sid)
                         } else {
-                            Notify("Failed to bind shortcut")
+                            Notify("Failed to bind shortcut", "error")
                         }
                     }
                 }
@@ -1494,15 +1506,15 @@ ProcessWebCommand(rawJson) {
                     oldName := mOld[1]
                     newName := mNew[1]
                     if (oldName == "" || newName == "") {
-                        Notify("Invalid preset name")
+                        Notify("Invalid preset name", "error")
                     } else if (oldName == newName) {
                         ; Exact no-op
                     } else {
                         oldVal := IniRead(iniFile, "Presets", oldName, "")
                         if (oldVal == "") {
-                            Notify("Preset not found: " . oldName)
+                            Notify("Preset not found: " . oldName, "error")
                         } else if (StrLower(newName) != StrLower(oldName) && IniRead(iniFile, "Presets", newName, "") != "") {
-                            Notify("Preset name already exists: " . newName)
+                            Notify("Preset name already exists: " . newName, "error")
                         } else {
                             IniDelete(iniFile, "Presets", oldName)
                             IniWrite(oldVal, iniFile, "Presets", newName)
@@ -1548,12 +1560,12 @@ ProcessWebCommand(rawJson) {
             case "openChangelog":
                 clUrl := RegExMatch(rawJson, '`"url`":\s*`"([^`"]+)`"', &mCl) ? mCl[1] : ""
                 if (clUrl == "" || !(InStr(clUrl, "https://github.com/rfibyzan/typeset") == 1))
-                    Notify("Invalid changelog link")
+                    Notify("Invalid changelog link", "error")
                 else {
                     try {
                         Run('"' . clUrl . '"')
                     } catch {
-                        Notify("Could not open browser")
+                        Notify("Could not open browser", "error")
                     }
                 }
         }
@@ -1610,7 +1622,7 @@ ExportPresetsToFile() {
         }
         ShowToast("Exported " . count . " preset(s).")
     } catch {
-        ShowToast("Export failed.")
+        ShowToast("Export failed.", "error")
     }
 }
 
