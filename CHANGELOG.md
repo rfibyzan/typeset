@@ -3,6 +3,20 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.15]
+
+### Added
+
+- Full-width title bar with bracket [T] logo, active preset badge,
+  and window buttons; the side rail starts below it.
+- Toast lift: save confirmations sit above the dirty bar instead of
+  floating mid-window.
+
+### Changed
+
+- Error toasts say what to do ("Select text in Word first.").
+- Light theme contrast and toast style aligned with dark.
+
 ## [1.0.14]
 
 ### Added

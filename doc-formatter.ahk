@@ -207,7 +207,7 @@ InstallAppFonts()
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.14"
+APP_VERSION := "1.0.15"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""
@@ -548,7 +548,7 @@ ApplyPresetToWord(presetName := "") {
             EndWordUndo(wordApp, undoStarted)
         }
     } catch {
-        ShowToast("Word not detected or no text selected.", "error")
+        ShowToast("Select text in Word first.", "error")
         return false
     }
 }
@@ -611,7 +611,7 @@ ApplyCaptionFormat(captionType) {
             EndWordUndo(wordApp, undoStarted)
         }
     } catch {
-        ShowToast("Word not detected or no text selected.", "error")
+        ShowToast("Select text in Word first.", "error")
     }
 }
 
