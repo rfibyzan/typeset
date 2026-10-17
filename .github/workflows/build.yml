@@ -1,0 +1,85 @@
+name: Build Typeset
+
+# Compile Typeset.exe di runner Windows dan bungkus jadi zip rilis.
+# - Setiap push/PR/manual: hasil zip tersedia sebagai artifact.
+# - Push tag vX.Y.Z: zip juga diunggah ke GitHub Release (draft).
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unduh AutoHotkey v2 dan Ahk2Exe (rilis terbaru)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $h = @{ Authorization = "Bearer $env:GH_TOKEN" }
+          New-Item -ItemType Directory -Force -Path _ahk | Out-Null
+          $ahk = Invoke-RestMethod -Headers $h https://api.github.com/repos/AutoHotkey/AutoHotkey/releases/latest
+          $ahkUrl = ($ahk.assets | Where-Object { $_.name -match '^AutoHotkey_[\d\.]+\.zip$' } | Select-Object -First 1).browser_download_url
+          $cmp = Invoke-RestMethod -Headers $h https://api.github.com/repos/AutoHotkey/Ahk2Exe/releases/latest
+          $cmpUrl = ($cmp.assets | Where-Object { $_.name -like '*.zip' } | Select-Object -First 1).browser_download_url
+          Write-Host "AutoHotkey: $ahkUrl"
+          Write-Host "Ahk2Exe:    $cmpUrl"
+          Invoke-WebRequest $ahkUrl -OutFile _ahk\ahk.zip
+          Invoke-WebRequest $cmpUrl -OutFile _ahk\cmp.zip
+          Expand-Archive _ahk\ahk.zip -DestinationPath _ahk\ahk
+          Expand-Archive _ahk\cmp.zip -DestinationPath _ahk\cmp
+
+      - name: Compile Typeset.exe (64-bit)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $root = (Get-Location).Path
+          $compiler = (Get-ChildItem _ahk\cmp -Recurse -Filter Ahk2Exe.exe | Select-Object -First 1).FullName
+          $base = (Get-ChildItem _ahk\ahk -Recurse -Filter AutoHotkey64.exe | Select-Object -First 1).FullName
+          $out = Join-Path $root "Typeset.exe"
+          $args = @("/silent", "verbose", "/in", (Join-Path $root "doc-formatter.ahk"), "/out", $out, "/base", $base, "/icon", (Join-Path $root "assets\typeset.ico"))
+          $p = Start-Process -FilePath $compiler -ArgumentList $args -Wait -PassThru -NoNewWindow
+          if ($p.ExitCode -ne 0) { throw "Ahk2Exe gagal (exit $($p.ExitCode))" }
+          if (-not (Test-Path $out)) { throw "Typeset.exe tidak terbentuk" }
+
+      - name: Susun paket rilis
+        id: pkg
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $m = Select-String -Path doc-formatter.ahk -Pattern 'APP_VERSION\s*:=\s*"([^"]+)"' | Select-Object -First 1
+          $ver = $m.Matches[0].Groups[1].Value
+          $dir = "release\Typeset-$ver"
+          New-Item -ItemType Directory -Force -Path "$dir\64bit", "$dir\assets" | Out-Null
+          Copy-Item Typeset.exe, WebView2Loader.dll $dir
+          Copy-Item 64bit\WebView2Loader.dll "$dir\64bit"
+          Copy-Item ui $dir -Recurse
+          Remove-Item "$dir\ui\data.js" -ErrorAction SilentlyContinue
+          Copy-Item assets\fonts "$dir\assets" -Recurse
+          $zip = "release\Typeset-$ver.zip"
+          Compress-Archive -Path "$dir\*" -DestinationPath $zip -Force
+          $size = (Get-Item $zip).Length
+          "version=$ver" >> $env:GITHUB_OUTPUT
+          "zip=$zip" >> $env:GITHUB_OUTPUT
+          "### Typeset $ver`nZip: Typeset-$ver.zip, ukuran **$size** byte (untuk update.json)." >> $env:GITHUB_STEP_SUMMARY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Typeset-${{ steps.pkg.outputs.version }}
+          path: release/Typeset-${{ steps.pkg.outputs.version }}/
+
+      - name: Unggah ke draft release (khusus tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: ${{ steps.pkg.outputs.zip }}
