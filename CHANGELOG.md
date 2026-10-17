@@ -9,8 +9,10 @@ Version numbers follow the in-app `APP_VERSION`.
 
 - Line Spacing for captions (Table and Figure each have their own
   value and toggle). Older presets keep single spacing, as before.
-- Heading line spacing per preset, applied by the Heading Cycler
-  after it sets the heading style. Off by default.
+- Heading target next to Table and Figure: font, size, bold/italic,
+  color, alignment, line spacing, before and after per preset. The
+  Heading Cycler applies Word's Heading 1-9 style, then these
+  settings on top. Every toggle is off by default.
 
 ### Changed
 
@@ -18,6 +20,7 @@ Version numbers follow the in-app `APP_VERSION`.
   pinned to the bottom of the window.
 - Preset switcher (Win+Shift+F) sizes its window to the list, so no
   empty area under the hints bar; the popup fills the window.
+- Format Text tab renamed Body Text.
 - Caption target switch moved next to the page title; preview meta
   sits in the preview header to save vertical space.
 

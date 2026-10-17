@@ -413,18 +413,33 @@ ApplyLineSpacing(pf, sp) {
     }
 }
 
-; Heading per preset: "spacing|flag" (flag 1 = terapkan line spacing setelah ganti style).
-; Default nonaktif agar heading tetap ikut style Word seperti versi lama.
+; Heading per preset (key Heading di [Captions_<preset>]):
+; font|size|style|color|align|spacing|before|after|flags8
+; flags8 = font,size,style,color,align,spacing,before,after. Default semua mati
+; agar heading tetap ikut style Word seperti versi lama.
 ParseHeadingConfig(raw) {
-    cfg := { spacing: "1.0", use: false }
+    cfg := { font: "Times New Roman", size: "12", style: "b", color: "#000000", align: "Left", spacing: "1.0", before: "0", after: "0",
+        use: Map("font", false, "size", false, "style", false, "color", false, "align", false, "spacing", false, "before", false, "after", false) }
     if (raw == "")
         return cfg
     d := StrSplit(raw, "|")
-    if (Trim(d[1]) != "")
-        cfg.spacing := Trim(d[1])
-    if (d.Length >= 2)
-        cfg.use := (Trim(d[2]) == "1")
+    if (d.Length < 9 || !RegExMatch(Trim(d[9]), "^[01]{8}$"))
+        return cfg
+    keys := ["font", "size", "style", "color", "align", "spacing", "before", "after"]
+    Loop 8 {
+        v := Trim(d[A_Index])
+        if (v != "")
+            cfg.%keys[A_Index]% := v
+        cfg.use[keys[A_Index]] := (SubStr(Trim(d[9]), A_Index, 1) == "1")
+    }
     return cfg
+}
+
+HeadUseJs(u) {
+    s := "{"
+    for i, k in ["font", "size", "style", "color", "align", "spacing", "before", "after"]
+        s .= (i > 1 ? ", " : " ") . k . ": " . JsBool(u[k])
+    return s . " }"
 }
 
 ParseCaptionConfig(rawCap, defaultAlign := "Left") {
@@ -1147,13 +1162,39 @@ CycleHeading(direction) {
                 sel.Style := -(nextLevel + 1)
             else
                 sel.Style := -1
-            ; Line spacing heading dari preset aktif (hanya untuk level 1-9).
+            ; Format heading dari preset aktif (hanya untuk level 1-9),
+            ; ditimpa di atas style Heading bawaan Word per paragraf.
             if (nextLevel >= 1) {
                 actP := IniRead(iniFile, "Settings", "ActivePreset", "")
                 if (actP != "") {
-                    hCfg := ParseHeadingConfig(IniRead(iniFile, "Captions_" . actP, "Heading", ""))
-                    if (hCfg.use)
-                        ApplyLineSpacing(sel.ParagraphFormat, hCfg.spacing)
+                    h := ParseHeadingConfig(IniRead(iniFile, "Captions_" . actP, "Heading", ""))
+                    for para in sel.Paragraphs {
+                        r := para.Range
+                        if (h.use["font"])
+                            r.Font.Name := h.font
+                        if (h.use["size"])
+                            r.Font.Size := Float(h.size)
+                        if (h.use["style"]) {
+                            r.Font.Bold := InStr(h.style, "b") ? true : false
+                            r.Font.Italic := InStr(h.style, "i") ? true : false
+                        }
+                        if (h.use["color"])
+                            r.Font.Color := HexToWordColor(h.color)
+                        if (h.use["align"]) {
+                            switch h.align {
+                                case "Center":  r.ParagraphFormat.Alignment := 1
+                                case "Right":   r.ParagraphFormat.Alignment := 2
+                                case "Justify": r.ParagraphFormat.Alignment := 3
+                                default:        r.ParagraphFormat.Alignment := 0
+                            }
+                        }
+                        if (h.use["spacing"])
+                            ApplyLineSpacing(r.ParagraphFormat, h.spacing)
+                        if (h.use["before"])
+                            r.ParagraphFormat.SpaceBefore := Float(h.before)
+                        if (h.use["after"])
+                            r.ParagraphFormat.SpaceAfter := Float(h.after)
+                    }
                 }
             }
         } finally {
@@ -1385,7 +1426,7 @@ ExportConfigToJs() {
                 js .= "        `"tabel`": { font: `"" . capT.font . "`", size: `"" . capT.size . "`", align: `"" . capT.align . "`", before: `"" . capT.before . "`", after: `"" . capT.after . "`", color: `"" . capT.color . "`", spacing: `"" . capT.spacing . "`", use: " . CapUseJs(capT.use) . " },`n"
                 js .= "        `"gambar`": { font: `"" . capG.font . "`", size: `"" . capG.size . "`", align: `"" . capG.align . "`", before: `"" . capG.before . "`", after: `"" . capG.after . "`", color: `"" . capG.color . "`", spacing: `"" . capG.spacing . "`", use: " . CapUseJs(capG.use) . " }`n"
                 js .= "      },`n"
-                js .= "      heading: { spacing: `"" . hCfg.spacing . "`", use: { spacing: " . JsBool(hCfg.use) . " } }`n"
+                js .= "      heading: { font: `"" . hCfg.font . "`", size: `"" . hCfg.size . "`", style: `"" . hCfg.style . "`", color: `"" . hCfg.color . "`", align: `"" . hCfg.align . "`", spacing: `"" . hCfg.spacing . "`", before: `"" . hCfg.before . "`", after: `"" . hCfg.after . "`", use: " . HeadUseJs(hCfg.use) . " }`n"
                 js .= "    },`n"
             }
         }
@@ -1529,9 +1570,13 @@ ProcessWebCommand(rawJson) {
                             }
                         }
                         if RegExMatch(rawJson, '`"heading`":\s*\{([^}]+)\}', &mHd) {
-                            hSp := RegExMatch(mHd[1], '`"spacing`":\s*`"([^`"]+)`"', &m) ? m[1] : "1.0"
-                            hFl := RegExMatch(rawJson, '`"hflag`":\s*`"([01])`"', &m) ? m[1] : "0"
-                            IniWrite(hSp . "|" . hFl, iniFile, "Captions_" . name, "Heading")
+                            hChunk := mHd[1]
+                            hPack := ""
+                            hDefs := Map("font", "Times New Roman", "size", "12", "style", "b", "color", "#000000", "align", "Left", "spacing", "1.0", "before", "0", "after", "0")
+                            for k in ["font", "size", "style", "color", "align", "spacing", "before", "after"]
+                                hPack .= (RegExMatch(hChunk, '`"' . k . '`":\s*`"([^`"]+)`"', &m) ? m[1] : hDefs[k]) . "|"
+                            hFl := RegExMatch(rawJson, '`"hflags`":\s*`"([01]{8})`"', &m) ? m[1] : "00000000"
+                            IniWrite(hPack . hFl, iniFile, "Captions_" . name, "Heading")
                         }
                     } else if (IniRead(iniFile, "Captions_" . name, "Tabel", "") == "") {
                         actPreset := IniRead(iniFile, "Settings", "ActivePreset", "Laprak")
