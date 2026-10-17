@@ -1,6 +1,6 @@
 {
-  "version": "1.0.16",
-  "url": "https://github.com/rfibyzan/typeset/releases/download/v1.0.16/Typeset-1.0.16.zip",
-  "notes": "Heading styling, caption line spacing, Smart Inline Format, new shortcuts Win+Shift+Z and Win+Shift+X.",
-  "size": 1233867
+  "version": "1.0.17",
+  "url": "https://github.com/rfibyzan/typeset/releases/download/v1.0.17/Typeset-1.0.17.zip",
+  "notes": "Bold and italic font style for table and figure captions.",
+  "size": 1234098
 }
