@@ -984,11 +984,11 @@ var state = {
   presets: {},
   shortcuts: {
     format: 'Ctrl+Shift+F',
-    switcher: 'Win+Shift+F',
+    switcher: 'Win+Shift+Z',
     capTable: 'Ctrl+Shift+T',
     capFig: 'Ctrl+Shift+G',
     heading: 'Ctrl+Alt',
-    menu: 'Win+Shift+C'
+    menu: 'Win+Shift+X'
   },
   lastUsed: {}
 };
@@ -2546,7 +2546,7 @@ function wireTitlebar() {
   var h = $('appHeader');
   if (h) h.addEventListener('mousedown', titlebarDrag);
   var b = $('badgeActivePreset');
-  if (b) { b.addEventListener('mousedown', function(e){ e.stopPropagation(); }); b.addEventListener('click', openSwitcherFromBadge); b.title = 'Switch preset (Win+Shift+F)'; b.style.cursor = 'pointer'; }
+  if (b) { b.addEventListener('mousedown', function(e){ e.stopPropagation(); }); b.addEventListener('click', openSwitcherFromBadge); b.title = 'Switch preset (' + ((state.shortcuts && state.shortcuts.switcher) || 'Win+Shift+Z') + ')'; b.style.cursor = 'pointer'; }
 }
 
 window.addEventListener('DOMContentLoaded', function() {

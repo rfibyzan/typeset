@@ -292,7 +292,7 @@ if !FileExist(iniFile) {
 ; Tulis default shortcut (format tampil, mis. "Ctrl+Shift+F") hanya bila belum ada.
 ; Tidak menimpa kustomisasi pengguna.
 WriteDefaultShortcuts() {
-    defs := Map("Format", "Ctrl+Shift+F", "Switcher", "Win+Shift+F", "CapTable", "Ctrl+Shift+T", "CapFig", "Ctrl+Shift+G", "Heading", "Ctrl+Alt", "Menu", "Win+Shift+C")
+    defs := Map("Format", "Ctrl+Shift+F", "Switcher", "Win+Shift+Z", "CapTable", "Ctrl+Shift+T", "CapFig", "Ctrl+Shift+G", "Heading", "Ctrl+Alt", "Menu", "Win+Shift+X")
     for id, def in defs {
         try {
             if (IniRead(iniFile, "Shortcuts", id, "") == "")
@@ -1388,7 +1388,7 @@ ExportConfigToJs() {
 
     js .= "  shortcuts: {`n"
     scIds := ["Format", "Switcher", "CapTable", "CapFig", "Heading", "Menu"]
-    scDefs := Map("Format", "Ctrl+Shift+F", "Switcher", "Win+Shift+F", "CapTable", "Ctrl+Shift+T", "CapFig", "Ctrl+Shift+G", "Heading", "Ctrl+Alt", "Menu", "Win+Shift+C")
+    scDefs := Map("Format", "Ctrl+Shift+F", "Switcher", "Win+Shift+Z", "CapTable", "Ctrl+Shift+T", "CapFig", "Ctrl+Shift+G", "Heading", "Ctrl+Alt", "Menu", "Win+Shift+X")
     for id in scIds {
         v := IniRead(iniFile, "Shortcuts", id, "")
         if (v == "")

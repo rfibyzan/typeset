@@ -21,6 +21,10 @@ Version numbers follow the in-app `APP_VERSION`.
 - Preset switcher (Win+Shift+F) sizes its window to the list, so no
   empty area under the hints bar; the popup fills the window.
 - Format Text tab renamed Body Text.
+- New default shortcuts, closer to the modifier keys: Select Preset
+  Win+Shift+Z (was Win+Shift+F), Typeset Menu Win+Shift+X (was
+  Win+Shift+C, which PowerToys Color Picker also uses). Shortcuts
+  already saved in typeset.ini are kept; change them in Settings.
 - Smart Inline Format (Settings, on by default): when the selection is
   only part of a paragraph, Format Text applies font, size, style and
   color only, so inline code no longer overwrites the paragraph's line
