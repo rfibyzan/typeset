@@ -3,6 +3,35 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.16]
+
+### Added
+
+- Line Spacing for captions (Table and Figure each have their own
+  value and toggle). Older presets keep single spacing, as before.
+- Heading target next to Table and Figure: font, size, bold/italic,
+  color, alignment, line spacing, before and after per preset. The
+  Heading Cycler applies Word's Heading 1-9 style, then these
+  settings on top. Every toggle is off by default.
+
+### Changed
+
+- Settings: version footer (View Changelog, Check for updates) is
+  pinned to the bottom of the window.
+- Preset switcher (Win+Shift+F) sizes its window to the list, so no
+  empty area under the hints bar; the popup fills the window.
+- Format Text tab renamed Body Text.
+- New default shortcuts, closer to the modifier keys: Select Preset
+  Win+Shift+Z (was Win+Shift+F), Typeset Menu Win+Shift+X (was
+  Win+Shift+C, which PowerToys Color Picker also uses). Shortcuts
+  already saved in typeset.ini are kept; change them in Settings.
+- Smart Inline Format (Settings, on by default): when the selection is
+  only part of a paragraph, Format Text applies font, size, style and
+  color only, so inline code no longer overwrites the paragraph's line
+  spacing, alignment or spacing. One Code preset now covers both cases.
+- Caption target switch moved next to the page title; preview meta
+  sits in the preview header to save vertical space.
+
 ## [1.0.15]
 
 ### Added

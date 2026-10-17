@@ -207,7 +207,7 @@ InstallAppFonts()
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.15"
+APP_VERSION := "1.0.16"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""
@@ -292,7 +292,7 @@ if !FileExist(iniFile) {
 ; Tulis default shortcut (format tampil, mis. "Ctrl+Shift+F") hanya bila belum ada.
 ; Tidak menimpa kustomisasi pengguna.
 WriteDefaultShortcuts() {
-    defs := Map("Format", "Ctrl+Shift+F", "Switcher", "Win+Shift+F", "CapTable", "Ctrl+Shift+T", "CapFig", "Ctrl+Shift+G", "Heading", "Ctrl+Alt", "Menu", "Win+Shift+C")
+    defs := Map("Format", "Ctrl+Shift+F", "Switcher", "Win+Shift+Z", "CapTable", "Ctrl+Shift+T", "CapFig", "Ctrl+Shift+G", "Heading", "Ctrl+Alt", "Menu", "Win+Shift+X")
     for id, def in defs {
         try {
             if (IniRead(iniFile, "Shortcuts", id, "") == "")
@@ -399,12 +399,76 @@ ParsePresetConfig(rawConfig) {
     return ""
 }
 
+; Terapkan line spacing ("1.0", "1.15", "1.5", "2.0", atau angka) ke ParagraphFormat Word.
+ApplyLineSpacing(pf, sp) {
+    switch sp {
+        case "1.0": pf.LineSpacingRule := 0
+        case "1.5": pf.LineSpacingRule := 1
+        case "2.0": pf.LineSpacingRule := 2
+        case "1.15":
+            pf.LineSpacingRule := 5
+            pf.LineSpacing := 13.8
+        default:
+            try pf.LineSpacing := Float(sp) * 12
+    }
+}
+
+; Heading per preset (key Heading di [Captions_<preset>]):
+; font|size|style|color|align|spacing|before|after|flags8
+; flags8 = font,size,style,color,align,spacing,before,after. Default semua mati
+; agar heading tetap ikut style Word seperti versi lama.
+ParseHeadingConfig(raw) {
+    cfg := { font: "Times New Roman", size: "12", style: "b", color: "#000000", align: "Left", spacing: "1.0", before: "0", after: "0",
+        use: Map("font", false, "size", false, "style", false, "color", false, "align", false, "spacing", false, "before", false, "after", false) }
+    if (raw == "")
+        return cfg
+    d := StrSplit(raw, "|")
+    if (d.Length < 9 || !RegExMatch(Trim(d[9]), "^[01]{8}$"))
+        return cfg
+    keys := ["font", "size", "style", "color", "align", "spacing", "before", "after"]
+    Loop 8 {
+        v := Trim(d[A_Index])
+        if (v != "")
+            cfg.%keys[A_Index]% := v
+        cfg.use[keys[A_Index]] := (SubStr(Trim(d[9]), A_Index, 1) == "1")
+    }
+    return cfg
+}
+
+HeadUseJs(u) {
+    s := "{"
+    for i, k in ["font", "size", "style", "color", "align", "spacing", "before", "after"]
+        s .= (i > 1 ? ", " : " ") . k . ": " . JsBool(u[k])
+    return s . " }"
+}
+
 ParseCaptionConfig(rawCap, defaultAlign := "Left") {
-    cfg := { font: "Times New Roman", size: "10", align: defaultAlign, before: "0", after: "0", color: "#000000",
-        use: Map("font", true, "size", true, "color", true, "align", true, "before", true, "after", true) }
+    ; spacing default "1.0" + aktif: sama dengan perilaku lama (caption selalu single).
+    cfg := { font: "Times New Roman", size: "10", align: defaultAlign, before: "0", after: "0", color: "#000000", spacing: "1.0",
+        use: Map("font", true, "size", true, "color", true, "align", true, "before", true, "after", true, "spacing", true) }
     if (rawCap == "")
         return cfg
     d := StrSplit(rawCap, "|")
+
+    ; Format v3 caption: font|size|align|before|after|color|flags7|spacing
+    ; (flags7 = font,size,color,align,before,after,spacing).
+    if (d.Length >= 8 && RegExMatch(Trim(d[7]), "^[01]{7}$")) {
+        cfg.font   := Trim(d[1])
+        cfg.size   := Trim(d[2])
+        cfg.align  := Trim(d[3])
+        cfg.before := Trim(d[4])
+        cfg.after  := Trim(d[5])
+        if (Trim(d[6]) != "")
+            cfg.color := Trim(d[6])
+        fl := Trim(d[7])
+        keys := ["font", "size", "color", "align", "before", "after", "spacing"]
+        Loop 7 {
+            cfg.use[keys[A_Index]] := (SubStr(fl, A_Index, 1) == "1")
+        }
+        if (Trim(d[8]) != "")
+            cfg.spacing := Trim(d[8])
+        return cfg
+    }
 
     ; Format v2 caption: font|size|align|before|after|color|flags6 (kolom 7 = 6 digit 0/1).
     if (d.Length >= 7 && RegExMatch(Trim(d[7]), "^[01]{6}$")) {
@@ -482,6 +546,26 @@ EndWordUndo(wordApp, started) {
 }
 
 ; ==========================================================
+; True bila Smart Inline aktif dan seleksi berada di dalam satu paragraf
+; tanpa mencakup paragraf itu secara penuh. Kursor tanpa seleksi = false.
+IsInlineSelection(sel) {
+    global iniFile
+    if !Integer(IniRead(iniFile, "Settings", "SmartInline", "1"))
+        return false
+    try {
+        if (sel.Start == sel.End)
+            return false
+        if (sel.Paragraphs.Count != 1)
+            return false
+        pr := sel.Paragraphs(1).Range
+        ; pr.End mencakup tanda paragraf, jadi End - 1 = akhir teks.
+        return (sel.Start > pr.Start || sel.End < pr.End - 1)
+    } catch {
+        return false
+    }
+}
+
+; ==========================================================
 ApplyPresetToWord(presetName := "") {
     if (presetName == "")
         presetName := IniRead(iniFile, "Settings", "ActivePreset", "")
@@ -517,6 +601,13 @@ ApplyPresetToWord(presetName := "") {
             }
             if (cfg.use["color"])
                 sel.Font.Color := HexToWordColor(cfg.color)
+            ; Smart inline: seleksi hanya sebagian dari satu paragraf (mis. kode
+            ; yang disisipkan di kalimat) -> format paragraf dilewati supaya
+            ; line spacing/alignment/spasi paragraf induk tidak tertimpa.
+            if IsInlineSelection(sel) {
+                ShowToast("Format applied (inline): " . presetName)
+                return true
+            }
             if (cfg.use["align"]) {
                 switch cfg.align {
                     case "Left":    sel.ParagraphFormat.Alignment := 0
@@ -530,18 +621,8 @@ ApplyPresetToWord(presetName := "") {
                 sel.ParagraphFormat.SpaceBefore := Float(cfg.before)
             if (cfg.use["after"])
                 sel.ParagraphFormat.SpaceAfter := Float(cfg.after)
-            if (cfg.use["spacing"]) {
-                switch cfg.spacing {
-                    case "1.0": sel.ParagraphFormat.LineSpacingRule := 0
-                    case "1.5": sel.ParagraphFormat.LineSpacingRule := 1
-                    case "2.0": sel.ParagraphFormat.LineSpacingRule := 2
-                    case "1.15":
-                        sel.ParagraphFormat.LineSpacingRule := 5
-                        sel.ParagraphFormat.LineSpacing := 13.8
-                    default:
-                        try sel.ParagraphFormat.LineSpacing := Float(cfg.spacing) * 12
-                }
-            }
+            if (cfg.use["spacing"])
+                ApplyLineSpacing(sel.ParagraphFormat, cfg.spacing)
             ShowToast("Format applied: " . presetName)
             return true
         } finally {
@@ -576,7 +657,8 @@ ApplyCaptionFormat(captionType) {
         alignment := IniRead(iniFile, legacySec, "Alignment", defaultAlign)
         spBefore  := IniRead(iniFile, legacySec, "SpaceBefore", "0")
         spAfter   := IniRead(iniFile, legacySec, "SpaceAfter", "0")
-        capCfg := { font: fontName, size: fontSize, align: alignment, before: spBefore, after: spAfter, color: fontColor }
+        capCfg := { font: fontName, size: fontSize, align: alignment, before: spBefore, after: spAfter, color: fontColor, spacing: "1.0",
+            use: Map("font", true, "size", true, "color", true, "align", true, "before", true, "after", true, "spacing", true) }
     }
 
     try {
@@ -603,7 +685,8 @@ ApplyCaptionFormat(captionType) {
                 sel.ParagraphFormat.SpaceBefore := Float(capCfg.before)
             if (capCfg.use["after"])
                 sel.ParagraphFormat.SpaceAfter  := Float(capCfg.after)
-            sel.ParagraphFormat.LineSpacingRule := 0
+            if (capCfg.use["spacing"])
+                ApplyLineSpacing(sel.ParagraphFormat, capCfg.spacing)
             label := (captionType == "tabel") ? "Table Caption" : "Figure Caption"
             presetSuffix := (activePreset != "") ? " (" . activePreset . ")" : ""
             ShowToast(label . presetSuffix . " applied")
@@ -837,9 +920,11 @@ ShowPresetSwitcher() {
     }
     swGui := Gui("+AlwaysOnTop +ToolWindow -Caption", "Select Preset")
     swGui.MarginX := 0, swGui.MarginY := 0
-    swGui.BackColor := "0x0B0B0D"
+    swGui.BackColor := "0x17171C"
     try {
-        swGui.Show("w400 h470 Center")
+        ; Tinggi awal diperkirakan dari jumlah preset; switcher.html lalu
+        ; mengirim tinggi persis (swResize) agar tidak ada ruang kosong.
+        swGui.Show("w400 h" . EstimateSwitcherHeight() . " Center")
         try WinActivate(swGui.Hwnd)
         FocusSwWebView()
         SetRoundedCorners(swGui.Hwnd)
@@ -873,6 +958,44 @@ ShowPresetSwitcher() {
     }
 }
 
+
+; Perkiraan tinggi popup switcher (px CSS = unit Gui ber-DPIScale).
+EstimateSwitcherHeight() {
+    n := 0, nRecent := 0
+    try {
+        rawP := IniRead(iniFile, "Presets", , "")
+        Loop Parse, rawP, "`n", "`r" {
+            if (A_LoopField == "")
+                continue
+            n += 1
+            nm := StrSplit(A_LoopField, "=")[1]
+            if (IniRead(iniFile, "LastUsed", nm, "") != "")
+                nRecent += 1
+        }
+    }
+    nRecent := Min(nRecent, 3)
+    rows := Min(n, 9)
+    h := 58 + 36 + Max(rows, 1) * 31 + 12
+    if (nRecent > 0)
+        h += 24
+    if (nRecent > 0 && n > nRecent)
+        h += 35
+    return Min(Max(h, 150), 470)
+}
+
+ResizeSwitcher(h) {
+    global swGui
+    if !IsObject(swGui)
+        return
+    h := Min(Max(Integer(h), 120), 520)
+    try {
+        WinGetPos(&wx, &wy, &ww, &wh, swGui.Hwnd)
+        cy := wy + wh / 2
+        swGui.Show("NA w400 h" . h)
+        WinGetPos(, , , &nh, swGui.Hwnd)
+        WinMove(, Round(cy - nh / 2), , , swGui.Hwnd)
+    }
+}
 
 ; Satu tembakan fokus keyboard ke child WebView pertama yang terverifikasi.
 ; Tanpa loop fallback, tanpa timer ulang (keduanya terbukti memindahkan fokus
@@ -1066,6 +1189,41 @@ CycleHeading(direction) {
                 sel.Style := -(nextLevel + 1)
             else
                 sel.Style := -1
+            ; Format heading dari preset aktif (hanya untuk level 1-9),
+            ; ditimpa di atas style Heading bawaan Word per paragraf.
+            if (nextLevel >= 1) {
+                actP := IniRead(iniFile, "Settings", "ActivePreset", "")
+                if (actP != "") {
+                    h := ParseHeadingConfig(IniRead(iniFile, "Captions_" . actP, "Heading", ""))
+                    for para in sel.Paragraphs {
+                        r := para.Range
+                        if (h.use["font"])
+                            r.Font.Name := h.font
+                        if (h.use["size"])
+                            r.Font.Size := Float(h.size)
+                        if (h.use["style"]) {
+                            r.Font.Bold := InStr(h.style, "b") ? true : false
+                            r.Font.Italic := InStr(h.style, "i") ? true : false
+                        }
+                        if (h.use["color"])
+                            r.Font.Color := HexToWordColor(h.color)
+                        if (h.use["align"]) {
+                            switch h.align {
+                                case "Center":  r.ParagraphFormat.Alignment := 1
+                                case "Right":   r.ParagraphFormat.Alignment := 2
+                                case "Justify": r.ParagraphFormat.Alignment := 3
+                                default:        r.ParagraphFormat.Alignment := 0
+                            }
+                        }
+                        if (h.use["spacing"])
+                            ApplyLineSpacing(r.ParagraphFormat, h.spacing)
+                        if (h.use["before"])
+                            r.ParagraphFormat.SpaceBefore := Float(h.before)
+                        if (h.use["after"])
+                            r.ParagraphFormat.SpaceAfter := Float(h.after)
+                    }
+                }
+            }
         } finally {
             EndWordUndo(wordApp, undoStarted)
         }
@@ -1206,7 +1364,8 @@ CapUseJs(u) {
     s .= ", color: " . JsBool(u["color"])
     s .= ", align: " . JsBool(u["align"])
     s .= ", before: " . JsBool(u["before"])
-    s .= ", after: " . JsBool(u["after"]) . " }"
+    s .= ", after: " . JsBool(u["after"])
+    s .= ", spacing: " . JsBool(u.Has("spacing") ? u["spacing"] : true) . " }"
     return s
 }
 
@@ -1229,7 +1388,7 @@ ExportConfigToJs() {
 
     js .= "  shortcuts: {`n"
     scIds := ["Format", "Switcher", "CapTable", "CapFig", "Heading", "Menu"]
-    scDefs := Map("Format", "Ctrl+Shift+F", "Switcher", "Win+Shift+F", "CapTable", "Ctrl+Shift+T", "CapFig", "Ctrl+Shift+G", "Heading", "Ctrl+Alt", "Menu", "Win+Shift+C")
+    scDefs := Map("Format", "Ctrl+Shift+F", "Switcher", "Win+Shift+Z", "CapTable", "Ctrl+Shift+T", "CapFig", "Ctrl+Shift+G", "Heading", "Ctrl+Alt", "Menu", "Win+Shift+X")
     for id in scIds {
         v := IniRead(iniFile, "Shortcuts", id, "")
         if (v == "")
@@ -1238,6 +1397,7 @@ ExportConfigToJs() {
     }
     js .= "  },`n"
     js .= "  alwaysOnTop: " . aotJs . ",`n"
+    js .= "  smartInline: " . (Integer(IniRead(iniFile, "Settings", "SmartInline", "1")) ? "true" : "false") . ",`n"
 
     js .= "  lastUsed: {`n"
     firstLU := true
@@ -1281,18 +1441,20 @@ ExportConfigToJs() {
             cfg := ParsePresetConfig(p[2])
             if IsObject(cfg) {
                 rawCapT := IniRead(iniFile, "Captions_" . name, "Tabel", "")
-                capT := (rawCapT != "") ? ParseCaptionConfig(rawCapT, tAlign) : { font: tFont, size: tSize, align: tAlign, before: tBefore, after: tAfter, color: tColor, use: Map("font", true, "size", true, "color", true, "align", true, "before", true, "after", true) }
+                capT := (rawCapT != "") ? ParseCaptionConfig(rawCapT, tAlign) : { font: tFont, size: tSize, align: tAlign, before: tBefore, after: tAfter, color: tColor, spacing: "1.0", use: Map("font", true, "size", true, "color", true, "align", true, "before", true, "after", true, "spacing", true) }
 
                 rawCapG := IniRead(iniFile, "Captions_" . name, "Gambar", "")
-                capG := (rawCapG != "") ? ParseCaptionConfig(rawCapG, gAlign) : { font: gFont, size: gSize, align: gAlign, before: gBefore, after: gAfter, color: gColor, use: Map("font", true, "size", true, "color", true, "align", true, "before", true, "after", true) }
+                capG := (rawCapG != "") ? ParseCaptionConfig(rawCapG, gAlign) : { font: gFont, size: gSize, align: gAlign, before: gBefore, after: gAfter, color: gColor, spacing: "1.0", use: Map("font", true, "size", true, "color", true, "align", true, "before", true, "after", true, "spacing", true) }
+                hCfg := ParseHeadingConfig(IniRead(iniFile, "Captions_" . name, "Heading", ""))
 
                 js .= "    `"" . name . "`": {`n"
                 js .= "      font: `"" . cfg.font . "`", size: `"" . cfg.size . "`", spacing: `"" . cfg.spacing . "`", before: `"" . cfg.before . "`", after: `"" . cfg.after . "`", color: `"" . cfg.color . "`", align: `"" . cfg.align . "`", style: `"" . cfg.style . "`",`n"
                 js .= "      use: " . UseFlagsJs(cfg.use) . ",`n"
                 js .= "      captions: {`n"
-                js .= "        `"tabel`": { font: `"" . capT.font . "`", size: `"" . capT.size . "`", align: `"" . capT.align . "`", before: `"" . capT.before . "`", after: `"" . capT.after . "`", color: `"" . capT.color . "`", use: " . CapUseJs(capT.use) . " },`n"
-                js .= "        `"gambar`": { font: `"" . capG.font . "`", size: `"" . capG.size . "`", align: `"" . capG.align . "`", before: `"" . capG.before . "`", after: `"" . capG.after . "`", color: `"" . capG.color . "`", use: " . CapUseJs(capG.use) . " }`n"
-                js .= "      }`n"
+                js .= "        `"tabel`": { font: `"" . capT.font . "`", size: `"" . capT.size . "`", align: `"" . capT.align . "`", before: `"" . capT.before . "`", after: `"" . capT.after . "`", color: `"" . capT.color . "`", spacing: `"" . capT.spacing . "`", use: " . CapUseJs(capT.use) . " },`n"
+                js .= "        `"gambar`": { font: `"" . capG.font . "`", size: `"" . capG.size . "`", align: `"" . capG.align . "`", before: `"" . capG.before . "`", after: `"" . capG.after . "`", color: `"" . capG.color . "`", spacing: `"" . capG.spacing . "`", use: " . CapUseJs(capG.use) . " }`n"
+                js .= "      },`n"
+                js .= "      heading: { font: `"" . hCfg.font . "`", size: `"" . hCfg.size . "`", style: `"" . hCfg.style . "`", color: `"" . hCfg.color . "`", align: `"" . hCfg.align . "`", spacing: `"" . hCfg.spacing . "`", before: `"" . hCfg.before . "`", after: `"" . hCfg.after . "`", use: " . HeadUseJs(hCfg.use) . " }`n"
                 js .= "    },`n"
             }
         }
@@ -1366,6 +1528,9 @@ ProcessWebCommand(rawJson) {
                 }
             case "closeSwitcher":
                 CloseSwitcherGui("ipc")
+            case "swResize":
+                if RegExMatch(rawJson, '`"h`":\s*(\d+)', &mH)
+                    ResizeSwitcher(mH[1])
             case "openSwitcher":
                 ShowPresetSwitcher()
             case "savePreset":
@@ -1386,8 +1551,12 @@ ProcessWebCommand(rawJson) {
 
                     ; If captions object is included in payload, save them
                     if InStr(rawJson, '`"captions`"') {
-                        tflags := RegExMatch(rawJson, '`"tflags`":\s*`"([01]{6})`"', &mTf) ? mTf[1] : "111111"
-                        gflags := RegExMatch(rawJson, '`"gflags`":\s*`"([01]{6})`"', &mGf) ? mGf[1] : "111111"
+                        tflags := RegExMatch(rawJson, '`"tflags`":\s*`"([01]{6,7})`"', &mTf) ? mTf[1] : "1111111"
+                        gflags := RegExMatch(rawJson, '`"gflags`":\s*`"([01]{6,7})`"', &mGf) ? mGf[1] : "1111111"
+                        if (StrLen(tflags) == 6)
+                            tflags .= "1"
+                        if (StrLen(gflags) == 6)
+                            gflags .= "1"
                         if RegExMatch(rawJson, '`"tabel`":\s*\{([^}]+)\}', &mTab) {
                             tChunk := mTab[1]
                             tF := RegExMatch(tChunk, '`"font`":\s*`"([^`"]+)`"', &m) ? m[1] : "Times New Roman"
@@ -1396,7 +1565,8 @@ ProcessWebCommand(rawJson) {
                             tBf := RegExMatch(tChunk, '`"before`":\s*`"([^`"]+)`"', &m) ? m[1] : "0"
                             tAf := RegExMatch(tChunk, '`"after`":\s*`"([^`"]+)`"', &m) ? m[1] : "0"
                             tC := RegExMatch(tChunk, '`"color`":\s*`"([^`"]+)`"', &m) ? m[1] : "#000000"
-                            packT := tF . "|" . tS . "|" . tA . "|" . tBf . "|" . tAf . "|" . tC . "|" . tflags
+                            tSp := RegExMatch(tChunk, '`"spacing`":\s*`"([^`"]+)`"', &m) ? m[1] : "1.0"
+                            packT := tF . "|" . tS . "|" . tA . "|" . tBf . "|" . tAf . "|" . tC . "|" . tflags . "|" . tSp
                             IniWrite(packT, iniFile, "Captions_" . name, "Tabel")
                             if (IniRead(iniFile, "Settings", "ActivePreset", "") == name) {
                                 IniWrite(tF, iniFile, "CaptionTabel", "Font")
@@ -1415,7 +1585,8 @@ ProcessWebCommand(rawJson) {
                             gBf := RegExMatch(gChunk, '`"before`":\s*`"([^`"]+)`"', &m) ? m[1] : "0"
                             gAf := RegExMatch(gChunk, '`"after`":\s*`"([^`"]+)`"', &m) ? m[1] : "0"
                             gC := RegExMatch(gChunk, '`"color`":\s*`"([^`"]+)`"', &m) ? m[1] : "#000000"
-                            packG := gF . "|" . gS . "|" . gA . "|" . gBf . "|" . gAf . "|" . gC . "|" . gflags
+                            gSp := RegExMatch(gChunk, '`"spacing`":\s*`"([^`"]+)`"', &m) ? m[1] : "1.0"
+                            packG := gF . "|" . gS . "|" . gA . "|" . gBf . "|" . gAf . "|" . gC . "|" . gflags . "|" . gSp
                             IniWrite(packG, iniFile, "Captions_" . name, "Gambar")
                             if (IniRead(iniFile, "Settings", "ActivePreset", "") == name) {
                                 IniWrite(gF, iniFile, "CaptionGambar", "Font")
@@ -1426,6 +1597,15 @@ ProcessWebCommand(rawJson) {
                                 IniWrite(gC, iniFile, "CaptionGambar", "Color")
                             }
                         }
+                        if RegExMatch(rawJson, '`"heading`":\s*\{([^}]+)\}', &mHd) {
+                            hChunk := mHd[1]
+                            hPack := ""
+                            hDefs := Map("font", "Times New Roman", "size", "12", "style", "b", "color", "#000000", "align", "Left", "spacing", "1.0", "before", "0", "after", "0")
+                            for k in ["font", "size", "style", "color", "align", "spacing", "before", "after"]
+                                hPack .= (RegExMatch(hChunk, '`"' . k . '`":\s*`"([^`"]+)`"', &m) ? m[1] : hDefs[k]) . "|"
+                            hFl := RegExMatch(rawJson, '`"hflags`":\s*`"([01]{8})`"', &m) ? m[1] : "00000000"
+                            IniWrite(hPack . hFl, iniFile, "Captions_" . name, "Heading")
+                        }
                     } else if (IniRead(iniFile, "Captions_" . name, "Tabel", "") == "") {
                         actPreset := IniRead(iniFile, "Settings", "ActivePreset", "Laprak")
                         curT := IniRead(iniFile, "Captions_" . actPreset, "Tabel", "")
@@ -1434,6 +1614,9 @@ ProcessWebCommand(rawJson) {
                             IniWrite(curT, iniFile, "Captions_" . name, "Tabel")
                         if (curG != "")
                             IniWrite(curG, iniFile, "Captions_" . name, "Gambar")
+                        curH := IniRead(iniFile, "Captions_" . actPreset, "Heading", "")
+                        if (curH != "")
+                            IniWrite(curH, iniFile, "Captions_" . name, "Heading")
                     }
                     ExportConfigToJs()
                 }
@@ -1447,6 +1630,8 @@ ProcessWebCommand(rawJson) {
                 if IsObject(webGui) {
                     try WinSetAlwaysOnTop(aot, webGui.Hwnd)
                 }
+            case "setSmartInline":
+                IniWrite(InStr(rawJson, '`"value`":true') ? 1 : 0, iniFile, "Settings", "SmartInline")
             case "resetConfig":
                 try {
                     FileDelete(iniFile)
@@ -1520,7 +1705,7 @@ ProcessWebCommand(rawJson) {
                             IniWrite(oldVal, iniFile, "Presets", newName)
                             oldSec := "Captions_" . oldName
                             newSec := "Captions_" . newName
-                            for key in ["Tabel", "Gambar"] {
+                            for key in ["Tabel", "Gambar", "Heading"] {
                                 capVal := IniRead(iniFile, oldSec, key, "")
                                 if (capVal != "")
                                     IniWrite(capVal, iniFile, newSec, key)
@@ -1601,10 +1786,11 @@ ExportPresetsToFile() {
             pack := IniRead(iniFile, "Presets", name, "")
             capT := IniRead(iniFile, "Captions_" . name, "Tabel", "")
             capG := IniRead(iniFile, "Captions_" . name, "Gambar", "")
+            capH := IniRead(iniFile, "Captions_" . name, "Heading", "")
             if !first
                 js .= ","
             first := false
-            js .= "`"" . JsEscape(name) . "`":{`"pack`":`"" . JsEscape(pack) . "`",`"tabel`":`"" . JsEscape(capT) . "`",`"gambar`":`"" . JsEscape(capG) . "`"}"
+            js .= "`"" . JsEscape(name) . "`":{`"pack`":`"" . JsEscape(pack) . "`",`"tabel`":`"" . JsEscape(capT) . "`",`"gambar`":`"" . JsEscape(capG) . "`",`"heading`":`"" . JsEscape(capH) . "`"}"
         }
     }
     js .= "}}"

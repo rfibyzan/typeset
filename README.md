@@ -9,9 +9,11 @@ each applied only when its toggle is on.
 
 - **Presets**: named formatting profiles, e.g. Laprak, TP, Kode, with
   per-property toggles, rename with duplicate-name guard, and delete.
-- **Caption & Heading**: table/figure caption styles plus an automatic
-  heading cycler (H1–H9) and Normal style reset.
-- **Preset switcher popup**: `Win+Shift+F` opens a focused preset picker that closes itself when you click away.
+- **Body Text**: paragraph typography applied by Format Text.
+- **Caption & Heading**: Table, Figure, and Heading styles (font, size,
+  color, alignment, line spacing, spacing before/after), plus an
+  automatic heading cycler (H1–H9) and Normal style reset.
+- **Preset switcher popup**: `Win+Shift+Z` opens a focused preset picker that closes itself when you click away.
 - **Global shortcuts**: fully remappable from Settings; conflicts are
   rejected with a warning.
 - **Auto-update**: checks GitHub on launch, downloads in the background
@@ -37,11 +39,11 @@ next to the exe and are preserved across updates.
 | Action          | Shortcut       |
 |-----------------|----------------|
 | Format Text     | Ctrl+Shift+F   |
-| Select Preset   | Win+Shift+F    |
+| Select Preset   | Win+Shift+Z    |
 | Table Caption   | Ctrl+Shift+T   |
 | Figure Caption  | Ctrl+Shift+G   |
 | Heading Cycler  | Ctrl+Alt+Arrow |
-| Typeset Menu    | Win+Shift+C    |
+| Typeset Menu    | Win+Shift+X    |
 
 All of them can be changed in Settings.
 
