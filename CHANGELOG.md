@@ -3,6 +3,13 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.17]
+
+### Added
+
+- Font Style (Bold, Italic) for Table and Figure captions, with its
+  own toggle. Off by default, so existing captions look the same.
+
 ## [1.0.16]
 
 ### Added

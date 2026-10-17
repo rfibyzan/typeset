@@ -207,7 +207,7 @@ InstallAppFonts()
 ; ==========================================================
 ; AUTO-UPDATE (GitHub releases)
 ; ==========================================================
-APP_VERSION := "1.0.16"
+APP_VERSION := "1.0.17"
 UPDATE_URL := "https://raw.githubusercontent.com/rfibyzan/typeset/main/update.json"
 updateBusy := false
 updateUrl := ""
@@ -444,11 +444,34 @@ HeadUseJs(u) {
 
 ParseCaptionConfig(rawCap, defaultAlign := "Left") {
     ; spacing default "1.0" + aktif: sama dengan perilaku lama (caption selalu single).
-    cfg := { font: "Times New Roman", size: "10", align: defaultAlign, before: "0", after: "0", color: "#000000", spacing: "1.0",
-        use: Map("font", true, "size", true, "color", true, "align", true, "before", true, "after", true, "spacing", true) }
+    ; style default "none" + mati: caption lama tidak diubah tebal/miringnya.
+    cfg := { font: "Times New Roman", size: "10", align: defaultAlign, before: "0", after: "0", color: "#000000", spacing: "1.0", style: "none",
+        use: Map("font", true, "size", true, "color", true, "align", true, "before", true, "after", true, "spacing", true, "style", false) }
     if (rawCap == "")
         return cfg
     d := StrSplit(rawCap, "|")
+
+    ; Format v4 caption: font|size|align|before|after|color|flags8|spacing|style
+    ; (flags8 = font,size,color,align,before,after,spacing,style).
+    if (d.Length >= 9 && RegExMatch(Trim(d[7]), "^[01]{8}$")) {
+        cfg.font   := Trim(d[1])
+        cfg.size   := Trim(d[2])
+        cfg.align  := Trim(d[3])
+        cfg.before := Trim(d[4])
+        cfg.after  := Trim(d[5])
+        if (Trim(d[6]) != "")
+            cfg.color := Trim(d[6])
+        fl := Trim(d[7])
+        keys := ["font", "size", "color", "align", "before", "after", "spacing", "style"]
+        Loop 8 {
+            cfg.use[keys[A_Index]] := (SubStr(fl, A_Index, 1) == "1")
+        }
+        if (Trim(d[8]) != "")
+            cfg.spacing := Trim(d[8])
+        st := StrLower(Trim(d[9]))
+        cfg.style := (st == "b" || st == "i" || st == "bi") ? st : "none"
+        return cfg
+    }
 
     ; Format v3 caption: font|size|align|before|after|color|flags7|spacing
     ; (flags7 = font,size,color,align,before,after,spacing).
@@ -687,6 +710,10 @@ ApplyCaptionFormat(captionType) {
                 sel.ParagraphFormat.SpaceAfter  := Float(capCfg.after)
             if (capCfg.use["spacing"])
                 ApplyLineSpacing(sel.ParagraphFormat, capCfg.spacing)
+            if (capCfg.HasOwnProp("style") && capCfg.use.Has("style") && capCfg.use["style"]) {
+                sel.Font.Bold := InStr(capCfg.style, "b") ? true : false
+                sel.Font.Italic := InStr(capCfg.style, "i") ? true : false
+            }
             label := (captionType == "tabel") ? "Table Caption" : "Figure Caption"
             presetSuffix := (activePreset != "") ? " (" . activePreset . ")" : ""
             ShowToast(label . presetSuffix . " applied")
@@ -1365,7 +1392,8 @@ CapUseJs(u) {
     s .= ", align: " . JsBool(u["align"])
     s .= ", before: " . JsBool(u["before"])
     s .= ", after: " . JsBool(u["after"])
-    s .= ", spacing: " . JsBool(u.Has("spacing") ? u["spacing"] : true) . " }"
+    s .= ", spacing: " . JsBool(u.Has("spacing") ? u["spacing"] : true)
+    s .= ", style: " . JsBool(u.Has("style") ? u["style"] : false) . " }"
     return s
 }
 
@@ -1451,8 +1479,8 @@ ExportConfigToJs() {
                 js .= "      font: `"" . cfg.font . "`", size: `"" . cfg.size . "`", spacing: `"" . cfg.spacing . "`", before: `"" . cfg.before . "`", after: `"" . cfg.after . "`", color: `"" . cfg.color . "`", align: `"" . cfg.align . "`", style: `"" . cfg.style . "`",`n"
                 js .= "      use: " . UseFlagsJs(cfg.use) . ",`n"
                 js .= "      captions: {`n"
-                js .= "        `"tabel`": { font: `"" . capT.font . "`", size: `"" . capT.size . "`", align: `"" . capT.align . "`", before: `"" . capT.before . "`", after: `"" . capT.after . "`", color: `"" . capT.color . "`", spacing: `"" . capT.spacing . "`", use: " . CapUseJs(capT.use) . " },`n"
-                js .= "        `"gambar`": { font: `"" . capG.font . "`", size: `"" . capG.size . "`", align: `"" . capG.align . "`", before: `"" . capG.before . "`", after: `"" . capG.after . "`", color: `"" . capG.color . "`", spacing: `"" . capG.spacing . "`", use: " . CapUseJs(capG.use) . " }`n"
+                js .= "        `"tabel`": { font: `"" . capT.font . "`", size: `"" . capT.size . "`", align: `"" . capT.align . "`", before: `"" . capT.before . "`", after: `"" . capT.after . "`", color: `"" . capT.color . "`", spacing: `"" . capT.spacing . "`", style: `"" . (capT.HasOwnProp("style") ? capT.style : "none") . "`", use: " . CapUseJs(capT.use) . " },`n"
+                js .= "        `"gambar`": { font: `"" . capG.font . "`", size: `"" . capG.size . "`", align: `"" . capG.align . "`", before: `"" . capG.before . "`", after: `"" . capG.after . "`", color: `"" . capG.color . "`", spacing: `"" . capG.spacing . "`", style: `"" . (capG.HasOwnProp("style") ? capG.style : "none") . "`", use: " . CapUseJs(capG.use) . " }`n"
                 js .= "      },`n"
                 js .= "      heading: { font: `"" . hCfg.font . "`", size: `"" . hCfg.size . "`", style: `"" . hCfg.style . "`", color: `"" . hCfg.color . "`", align: `"" . hCfg.align . "`", spacing: `"" . hCfg.spacing . "`", before: `"" . hCfg.before . "`", after: `"" . hCfg.after . "`", use: " . HeadUseJs(hCfg.use) . " }`n"
                 js .= "    },`n"
@@ -1551,12 +1579,17 @@ ProcessWebCommand(rawJson) {
 
                     ; If captions object is included in payload, save them
                     if InStr(rawJson, '`"captions`"') {
-                        tflags := RegExMatch(rawJson, '`"tflags`":\s*`"([01]{6,7})`"', &mTf) ? mTf[1] : "1111111"
-                        gflags := RegExMatch(rawJson, '`"gflags`":\s*`"([01]{6,7})`"', &mGf) ? mGf[1] : "1111111"
+                        tflags := RegExMatch(rawJson, '`"tflags`":\s*`"([01]{6,8})`"', &mTf) ? mTf[1] : "11111110"
+                        gflags := RegExMatch(rawJson, '`"gflags`":\s*`"([01]{6,8})`"', &mGf) ? mGf[1] : "11111110"
+                        ; Lengkapi ke 8 flag: spacing aktif, style mati.
                         if (StrLen(tflags) == 6)
                             tflags .= "1"
                         if (StrLen(gflags) == 6)
                             gflags .= "1"
+                        if (StrLen(tflags) == 7)
+                            tflags .= "0"
+                        if (StrLen(gflags) == 7)
+                            gflags .= "0"
                         if RegExMatch(rawJson, '`"tabel`":\s*\{([^}]+)\}', &mTab) {
                             tChunk := mTab[1]
                             tF := RegExMatch(tChunk, '`"font`":\s*`"([^`"]+)`"', &m) ? m[1] : "Times New Roman"
@@ -1566,7 +1599,8 @@ ProcessWebCommand(rawJson) {
                             tAf := RegExMatch(tChunk, '`"after`":\s*`"([^`"]+)`"', &m) ? m[1] : "0"
                             tC := RegExMatch(tChunk, '`"color`":\s*`"([^`"]+)`"', &m) ? m[1] : "#000000"
                             tSp := RegExMatch(tChunk, '`"spacing`":\s*`"([^`"]+)`"', &m) ? m[1] : "1.0"
-                            packT := tF . "|" . tS . "|" . tA . "|" . tBf . "|" . tAf . "|" . tC . "|" . tflags . "|" . tSp
+                            tSt := RegExMatch(tChunk, '`"style`":\s*`"([^`"]+)`"', &m) ? m[1] : "none"
+                            packT := tF . "|" . tS . "|" . tA . "|" . tBf . "|" . tAf . "|" . tC . "|" . tflags . "|" . tSp . "|" . tSt
                             IniWrite(packT, iniFile, "Captions_" . name, "Tabel")
                             if (IniRead(iniFile, "Settings", "ActivePreset", "") == name) {
                                 IniWrite(tF, iniFile, "CaptionTabel", "Font")
@@ -1586,7 +1620,8 @@ ProcessWebCommand(rawJson) {
                             gAf := RegExMatch(gChunk, '`"after`":\s*`"([^`"]+)`"', &m) ? m[1] : "0"
                             gC := RegExMatch(gChunk, '`"color`":\s*`"([^`"]+)`"', &m) ? m[1] : "#000000"
                             gSp := RegExMatch(gChunk, '`"spacing`":\s*`"([^`"]+)`"', &m) ? m[1] : "1.0"
-                            packG := gF . "|" . gS . "|" . gA . "|" . gBf . "|" . gAf . "|" . gC . "|" . gflags . "|" . gSp
+                            gSt := RegExMatch(gChunk, '`"style`":\s*`"([^`"]+)`"', &m) ? m[1] : "none"
+                            packG := gF . "|" . gS . "|" . gA . "|" . gBf . "|" . gAf . "|" . gC . "|" . gflags . "|" . gSp . "|" . gSt
                             IniWrite(packG, iniFile, "Captions_" . name, "Gambar")
                             if (IniRead(iniFile, "Settings", "ActivePreset", "") == name) {
                                 IniWrite(gF, iniFile, "CaptionGambar", "Font")

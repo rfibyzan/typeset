@@ -735,7 +735,7 @@
             <button type="button" onclick="stepCapField('size',1)" title="Increase">+</button>
           </div>
         </div>
-        <div class="row" id="rowCapStyle" style="display:none;">
+        <div class="row" id="rowCapStyle">
           <div class="row-label"><label class="tgl"><input type="checkbox" id="tglCapStyle" onchange="onCapToggle('style')" /><span class="sw"></span></label><span class="row-name">Font Style</span></div>
           <div class="ctl seg">
             <button type="button" id="btnCapBold" class="tgl-btn b" onclick="toggleCapStyle('b')">Bold</button>
@@ -943,9 +943,10 @@ function $(id) { return document.getElementById(id); }
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
 function defaultUse8() { return { font: true, size: true, style: true, color: true, spacing: true, align: true, before: true, after: true }; }
-function defaultUse6() { return { font: true, size: true, color: true, align: true, before: true, after: true, spacing: true }; }
+// style default mati: caption lama tidak berubah tebal/miringnya.
+function defaultUse6() { return { font: true, size: true, color: true, align: true, before: true, after: true, spacing: true, style: false }; }
 function defaultCap(align) {
-  return { font: 'Times New Roman', size: '10', align: align, before: '6', after: '3', color: '#000000', spacing: '1.0', use: defaultUse6() };
+  return { font: 'Times New Roman', size: '10', align: align, before: '6', after: '3', color: '#000000', spacing: '1.0', style: 'none', use: defaultUse6() };
 }
 var HEAD_KEYS = ['font', 'size', 'style', 'color', 'align', 'spacing', 'before', 'after'];
 var HEADSIZES = ['10','11','12','13','14','16','18','20'];
@@ -959,8 +960,9 @@ function normCap(c, align) {
   var d = defaultCap(align);
   c = c || d;
   if (!c.use) c.use = defaultUse6();
-  Object.keys(d.use).forEach(function(k) { if (typeof c.use[k] !== 'boolean') c.use[k] = true; });
+  Object.keys(d.use).forEach(function(k) { if (typeof c.use[k] !== 'boolean') c.use[k] = (k !== 'style'); });
   if (!c.spacing) c.spacing = '1.0';
+  if (!/^(b|i|bi)$/.test(c.style || '')) c.style = 'none';
   return c;
 }
 function normHeading(h) {
@@ -1498,16 +1500,20 @@ function parsePackCaption(pack, defAlign) {
   var c = defaultCap(defAlign);
   if (typeof pack !== 'string' || !pack) return c;
   var d = pack.split('|');
-  if (d.length >= 7 && /^[01]{6,7}$/.test((d[6] || '').trim())) {
+  if (d.length >= 7 && /^[01]{6,8}$/.test((d[6] || '').trim())) {
     c.font = (d[0] || '').trim() || c.font;
     c.size = (d[1] || '').trim() || c.size;
     c.align = (d[2] || '').trim() || c.align;
     c.before = (d[3] || '').trim() || c.before;
     c.after = (d[4] || '').trim() || c.after;
     c.color = (d[5] || '').trim() || c.color;
-    var fl = d[6].trim(), keys = ['font', 'size', 'color', 'align', 'before', 'after', 'spacing'];
-    for (var i = 0; i < fl.length && i < 7; i++) c.use[keys[i]] = fl.charAt(i) === '1';
-    if (fl.length === 7) c.spacing = (d[7] || '').trim() || c.spacing;
+    var fl = d[6].trim(), keys = ['font', 'size', 'color', 'align', 'before', 'after', 'spacing', 'style'];
+    for (var i = 0; i < fl.length && i < 8; i++) c.use[keys[i]] = fl.charAt(i) === '1';
+    if (fl.length >= 7) c.spacing = (d[7] || '').trim() || c.spacing;
+    if (fl.length === 8) {
+      var cst = (d[8] || '').trim().toLowerCase();
+      c.style = (cst === 'b' || cst === 'i' || cst === 'bi') ? cst : 'none';
+    }
   }
   return c;
 }
@@ -1851,8 +1857,9 @@ function useToFlags8(u) {
   return s;
 }
 
+// Caption flags8 = font,size,color,align,before,after,spacing,style
 function useToFlags6(u) {
-  var keys = ['font', 'size', 'color', 'align', 'before', 'after', 'spacing'];
+  var keys = ['font', 'size', 'color', 'align', 'before', 'after', 'spacing', 'style'];
   var s = '';
   keys.forEach(function(k) { s += u[k] ? '1' : '0'; });
   return s;
@@ -1919,7 +1926,6 @@ function switchCaptionType(type, skipCommit) {
   if (gb) gb.classList.toggle('active', type === 'gambar');
   if (hb) hb.classList.toggle('active', type === 'heading');
   var isHead = (type === 'heading');
-  $('rowCapStyle').style.display = isHead ? '' : 'none';
   $('previewCapTitle').innerText = isHead ? 'Heading Preview' : 'Caption Preview';
   var c = curCaps();
   setInputFont('capFontInput', c.font);
@@ -1930,13 +1936,10 @@ function switchCaptionType(type, skipCommit) {
   $('capColorDot').style.backgroundColor = c.color;
   setCapAlignUI(c.align);
   setSegActive('segCapSpacing', 'data-sp', c.spacing);
-  var map = { font: 'tglCapFont', size: 'tglCapSize', color: 'tglCapColor', align: 'tglCapAlign', before: 'tglCapBefore', after: 'tglCapAfter', spacing: 'tglCapSpacing' };
-  if (isHead) {
-    map.style = 'tglCapStyle';
-    $('btnCapBold').classList.toggle('active', (c.style || '').indexOf('b') >= 0);
-    $('btnCapItalic').classList.toggle('active', (c.style || '').indexOf('i') >= 0);
-    setRowOff('rowCapStyle', !c.use.style);
-  }
+  var map = { font: 'tglCapFont', size: 'tglCapSize', color: 'tglCapColor', align: 'tglCapAlign', before: 'tglCapBefore', after: 'tglCapAfter', spacing: 'tglCapSpacing', style: 'tglCapStyle' };
+  $('btnCapBold').classList.toggle('active', (c.style || '').indexOf('b') >= 0);
+  $('btnCapItalic').classList.toggle('active', (c.style || '').indexOf('i') >= 0);
+  setRowOff('rowCapStyle', !c.use.style);
   Object.keys(map).forEach(function(k) {
     var box = $(map[k]);
     if (box) box.checked = !!c.use[k];
@@ -2042,7 +2045,7 @@ function renderCaptionPreview() {
   el.style.color = c.color || '#000000';
   var ta = (c.align || 'Left').toLowerCase();
   el.style.textAlign = (ta === 'justify') ? 'justify' : ta;
-  var st = (state.curCapType === 'heading' && c.use.style) ? (c.style || 'none') : (state.curCapType === 'heading' ? 'b' : 'none');
+  var st = c.use.style ? (c.style || 'none') : (state.curCapType === 'heading' ? 'b' : 'none');
   el.style.fontWeight = st.indexOf('b') >= 0 ? '700' : '400';
   el.style.fontStyle = st.indexOf('i') >= 0 ? 'italic' : 'normal';
   el.innerText = state.curCapType === 'tabel'
