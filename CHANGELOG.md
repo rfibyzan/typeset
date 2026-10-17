@@ -3,6 +3,24 @@
 All notable changes to Typeset, newest first.
 Version numbers follow the in-app `APP_VERSION`.
 
+## [1.0.16]
+
+### Added
+
+- Line Spacing for captions (Table and Figure each have their own
+  value and toggle). Older presets keep single spacing, as before.
+- Heading line spacing per preset, applied by the Heading Cycler
+  after it sets the heading style. Off by default.
+
+### Changed
+
+- Settings: version footer (View Changelog, Check for updates) is
+  pinned to the bottom of the window.
+- Preset switcher (Win+Shift+F) sizes its window to the list, so no
+  empty area under the hints bar; the popup fills the window.
+- Caption target switch moved next to the page title; preview meta
+  sits in the preview header to save vertical space.
+
 ## [1.0.15]
 
 ### Added

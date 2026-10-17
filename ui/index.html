@@ -171,6 +171,7 @@
   .row + .row { border-top: 1px solid var(--border); }
   .row-label { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .row-name { font-size: 12px; font-weight: 500; white-space: nowrap; }
+  .row-hint { font-size: 11px; color: var(--subtle); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .row.off .ctl { opacity: 0.35; pointer-events: none; }
   .row.off .row-name { color: var(--muted); }
   .ctl { display: flex; align-items: center; gap: 6px; }
@@ -344,6 +345,8 @@
   }
   body.light .preview-paper { border: 1px solid var(--border2); box-shadow: 0 2px 8px rgba(0,0,0,.1); }
   .preview-meta { font-size: 11px; color: var(--subtle); text-align: right; padding: 0 14px; margin-top: -2px; }
+  .card h2.preview-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding-right: 14px; }
+  .card h2.preview-head .preview-meta { padding: 0; margin: 0; font-weight: 400; letter-spacing: 0; text-transform: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .preview-text { width: 100%; word-break: break-word; }
 
   .tab-content { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
@@ -520,7 +523,10 @@
   @keyframes upd-rot { to { transform: rotate(360deg); } }
 
   /* Pengaturan */
-  #tabSettings { gap: 6px; }
+  #tabSettings { gap: 6px; flex: 1; }
+  #tabSettings .app-ver { margin-top: auto; padding-bottom: 2px; }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+  .page-head .seg { margin-bottom: 1px; }
   #tabSettings .sc-row { padding: 3px 14px; }
   #tabSettings .note { padding: 4px 14px 5px; }
   .sc-row {
@@ -694,26 +700,21 @@
       </div>
 
       <div class="card">
-        <h2>Document Preview</h2>
-        <div class="preview-meta" id="previewMeta"></div>
+        <h2 class="preview-head"><span>Document Preview</span><span class="preview-meta" id="previewMeta"></span></h2>
         <div class="preview-paper"><div id="previewText" class="preview-text">Sample Document Format Text: Based on practicum results, the solution changed pH after three consecutive titrations.</div></div>
       </div>
     </section>
 
     <!-- TAB CAPTION -->
     <section id="tabCaption" class="tab-content" style="display:none;">
-      <div>
-        <div class="page-title">Caption &amp; Heading</div>
-        <div class="page-sub">Caption &amp; Heading Styles</div>
-      </div>
-
-      <div class="card">
-        <div class="row" style="padding-top:8px; padding-bottom:8px;">
-          <span class="row-name">Caption Target</span>
-          <div class="ctl seg">
-            <button type="button" id="btnCapTabel" onclick="switchCaptionType('tabel')">Table</button>
-            <button type="button" id="btnCapGambar" onclick="switchCaptionType('gambar')">Figure</button>
-          </div>
+      <div class="page-head">
+        <div>
+          <div class="page-title">Caption &amp; Heading</div>
+          <div class="page-sub">Caption &amp; Heading Styles</div>
+        </div>
+        <div class="ctl seg" role="tablist" aria-label="Caption target" title="Caption target">
+          <button type="button" id="btnCapTabel" onclick="switchCaptionType('tabel')">Table</button>
+          <button type="button" id="btnCapGambar" onclick="switchCaptionType('gambar')">Figure</button>
         </div>
       </div>
 
@@ -744,6 +745,15 @@
 
       <div class="card">
         <h2>Alignment &amp; Spacing</h2>
+        <div class="row" id="rowCapSpacing">
+          <div class="row-label"><label class="tgl"><input type="checkbox" id="tglCapSpacing" checked onchange="onCapToggle('spacing')" /><span class="sw"></span></label><span class="row-name">Line Spacing</span></div>
+          <div class="ctl seg" id="segCapSpacing">
+            <button type="button" data-sp="1.0" onclick="setCapSpacing('1.0')">1.0</button>
+            <button type="button" data-sp="1.15" onclick="setCapSpacing('1.15')">1.15</button>
+            <button type="button" data-sp="1.5" onclick="setCapSpacing('1.5')">1.5</button>
+            <button type="button" data-sp="2.0" onclick="setCapSpacing('2.0')">2.0</button>
+          </div>
+        </div>
         <div class="row" id="rowCapAlign">
           <div class="row-label"><label class="tgl"><input type="checkbox" id="tglCapAlign" checked onchange="onCapToggle('align')" /><span class="sw"></span></label><span class="row-name">Alignment</span></div>
           <div class="ctl align-group" id="capAlignGroup">
@@ -772,8 +782,20 @@
       </div>
 
       <div class="card">
-        <h2>Caption Preview</h2>
-        <div class="preview-meta" id="previewCapMeta"></div>
+        <h2>Heading</h2>
+        <div class="row" id="rowHeadSpacing">
+          <div class="row-label"><label class="tgl"><input type="checkbox" id="tglHeadSpacing" onchange="onHeadingToggle()" /><span class="sw"></span></label><span class="row-name">Line Spacing</span><span class="row-hint">Applied by the Heading Cycler</span></div>
+          <div class="ctl seg" id="segHeadSpacing">
+            <button type="button" data-sp="1.0" onclick="setHeadingSpacing('1.0')">1.0</button>
+            <button type="button" data-sp="1.15" onclick="setHeadingSpacing('1.15')">1.15</button>
+            <button type="button" data-sp="1.5" onclick="setHeadingSpacing('1.5')">1.5</button>
+            <button type="button" data-sp="2.0" onclick="setHeadingSpacing('2.0')">2.0</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="preview-head"><span>Caption Preview</span><span class="preview-meta" id="previewCapMeta"></span></h2>
         <div class="preview-paper"><div id="previewCapText" class="preview-text">Table 1.1 Sample Observation Results and Spectrophotometer Absorbance Measurements</div></div>
       </div>
     </section>
@@ -923,9 +945,24 @@ function $(id) { return document.getElementById(id); }
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
 function defaultUse8() { return { font: true, size: true, style: true, color: true, spacing: true, align: true, before: true, after: true }; }
-function defaultUse6() { return { font: true, size: true, color: true, align: true, before: true, after: true }; }
+function defaultUse6() { return { font: true, size: true, color: true, align: true, before: true, after: true, spacing: true }; }
 function defaultCap(align) {
-  return { font: 'Times New Roman', size: '10', align: align, before: '6', after: '3', color: '#000000', use: defaultUse6() };
+  return { font: 'Times New Roman', size: '10', align: align, before: '6', after: '3', color: '#000000', spacing: '1.0', use: defaultUse6() };
+}
+function defaultHeading() { return { spacing: '1.0', use: { spacing: false } }; }
+function normCap(c, align) {
+  var d = defaultCap(align);
+  c = c || d;
+  if (!c.use) c.use = defaultUse6();
+  Object.keys(d.use).forEach(function(k) { if (typeof c.use[k] !== 'boolean') c.use[k] = true; });
+  if (!c.spacing) c.spacing = '1.0';
+  return c;
+}
+function normHeading(h) {
+  if (!h || typeof h !== 'object') h = defaultHeading();
+  if (!h.spacing) h.spacing = '1.0';
+  if (!h.use || typeof h.use.spacing !== 'boolean') h.use = { spacing: false };
+  return h;
 }
 
 var state = {
@@ -1151,7 +1188,8 @@ function ensurePreset(name) {
     p = {
       font: 'Times New Roman', size: '12', spacing: '1.5', before: '0', after: '0',
       color: '#000000', align: 'Justify', style: 'none', use: defaultUse8(),
-      captions: { tabel: defaultCap('Left'), gambar: defaultCap('Center') }
+      captions: { tabel: defaultCap('Left'), gambar: defaultCap('Center') },
+      heading: defaultHeading()
     };
     state.presets[name] = p;
   }
@@ -1159,9 +1197,9 @@ function ensurePreset(name) {
   if (typeof p.style !== 'string') p.style = 'none';
   if (!p.captions) p.captions = { tabel: defaultCap('Left'), gambar: defaultCap('Center') };
   ['tabel', 'gambar'].forEach(function(t) {
-    if (!p.captions[t]) p.captions[t] = defaultCap(t === 'tabel' ? 'Left' : 'Center');
-    if (!p.captions[t].use) p.captions[t].use = defaultUse6();
+    p.captions[t] = normCap(p.captions[t], t === 'tabel' ? 'Left' : 'Center');
   });
+  p.heading = normHeading(p.heading);
   return p;
 }
 
@@ -1360,7 +1398,8 @@ function confirmAddPreset() {
     src = {
       font: 'Times New Roman', size: '12', spacing: '1.5', before: '0', after: '0',
       color: '#000000', align: 'Justify', style: 'none', use: defaultUse8(),
-      captions: { tabel: defaultCap('Left'), gambar: defaultCap('Center') }
+      captions: { tabel: defaultCap('Left'), gambar: defaultCap('Center') },
+      heading: defaultHeading()
     };
   }
   if (!src.font) src.font = 'Times New Roman';
@@ -1449,17 +1488,27 @@ function parsePackCaption(pack, defAlign) {
   var c = defaultCap(defAlign);
   if (typeof pack !== 'string' || !pack) return c;
   var d = pack.split('|');
-  if (d.length >= 7 && /^[01]{6}$/.test((d[6] || '').trim())) {
+  if (d.length >= 7 && /^[01]{6,7}$/.test((d[6] || '').trim())) {
     c.font = (d[0] || '').trim() || c.font;
     c.size = (d[1] || '').trim() || c.size;
     c.align = (d[2] || '').trim() || c.align;
     c.before = (d[3] || '').trim() || c.before;
     c.after = (d[4] || '').trim() || c.after;
     c.color = (d[5] || '').trim() || c.color;
-    var fl = d[6].trim(), keys = ['font', 'size', 'color', 'align', 'before', 'after'];
-    for (var i = 0; i < 6; i++) c.use[keys[i]] = fl.charAt(i) === '1';
+    var fl = d[6].trim(), keys = ['font', 'size', 'color', 'align', 'before', 'after', 'spacing'];
+    for (var i = 0; i < fl.length && i < 7; i++) c.use[keys[i]] = fl.charAt(i) === '1';
+    if (fl.length === 7) c.spacing = (d[7] || '').trim() || c.spacing;
   }
   return c;
+}
+
+function parsePackHeading(pack) {
+  var h = defaultHeading();
+  if (typeof pack !== 'string' || !pack) return h;
+  var d = pack.split('|');
+  h.spacing = (d[0] || '').trim() || h.spacing;
+  h.use.spacing = (d[1] || '').trim() === '1';
+  return h;
 }
 
 function importPresetsFile(input) {
@@ -1487,6 +1536,7 @@ function importPresetsFile(input) {
           tabel: parsePackCaption(entry.tabel, 'Left'),
           gambar: parsePackCaption(entry.gambar, 'Center')
         };
+        p.heading = parsePackHeading(entry.heading);
         state.presets[name] = p;
         snapshot(name);
         sendToHost({ action: 'savePreset', name: name, data: packPreset(name) });
@@ -1786,7 +1836,7 @@ function useToFlags8(u) {
 }
 
 function useToFlags6(u) {
-  var keys = ['font', 'size', 'color', 'align', 'before', 'after'];
+  var keys = ['font', 'size', 'color', 'align', 'before', 'after', 'spacing'];
   var s = '';
   keys.forEach(function(k) { s += u[k] ? '1' : '0'; });
   return s;
@@ -1801,6 +1851,8 @@ function packPreset(name) {
   delete data.use;
   delete data.captions.tabel.use;
   delete data.captions.gambar.use;
+  data.hflag = p.heading.use.spacing ? '1' : '0';
+  delete data.heading.use;
   return data;
 }
 
@@ -1857,7 +1909,8 @@ function switchCaptionType(type, skipCommit) {
   $('capColorHex').innerText = c.color;
   $('capColorDot').style.backgroundColor = c.color;
   setCapAlignUI(c.align);
-  var map = { font: 'tglCapFont', size: 'tglCapSize', color: 'tglCapColor', align: 'tglCapAlign', before: 'tglCapBefore', after: 'tglCapAfter' };
+  setSegActive('segCapSpacing', 'data-sp', c.spacing);
+  var map = { font: 'tglCapFont', size: 'tglCapSize', color: 'tglCapColor', align: 'tglCapAlign', before: 'tglCapBefore', after: 'tglCapAfter', spacing: 'tglCapSpacing' };
   Object.keys(map).forEach(function(k) {
     var box = $(map[k]);
     if (box) box.checked = !!c.use[k];
@@ -1868,7 +1921,43 @@ function switchCaptionType(type, skipCommit) {
   setRowOff('rowCapAlign', !c.use.align);
   setRowOff('rowCapBefore', !c.use.before);
   setRowOff('rowCapAfter', !c.use.after);
+  setRowOff('rowCapSpacing', !c.use.spacing);
+  renderHeadingUI();
   renderCaptionPreview();
+}
+
+function curHeading() {
+  return ensurePreset(curPresetName()).heading;
+}
+
+function renderHeadingUI() {
+  var h = curHeading();
+  setSegActive('segHeadSpacing', 'data-sp', h.spacing);
+  var box = $('tglHeadSpacing');
+  if (box) box.checked = !!h.use.spacing;
+  setRowOff('rowHeadSpacing', !h.use.spacing);
+}
+
+function onHeadingToggle() {
+  var h = curHeading();
+  h.use.spacing = !!$('tglHeadSpacing').checked;
+  setRowOff('rowHeadSpacing', !h.use.spacing);
+  refreshDirty();
+}
+
+function setHeadingSpacing(v) {
+  var h = curHeading();
+  h.spacing = v;
+  setSegActive('segHeadSpacing', 'data-sp', v);
+  refreshDirty();
+}
+
+function setCapSpacing(v) {
+  var c = curCaps();
+  c.spacing = v;
+  setSegActive('segCapSpacing', 'data-sp', v);
+  renderCaptionPreview();
+  refreshDirty();
 }
 
 function setCapAlignUI(v) {
@@ -1897,9 +1986,9 @@ function onCapFontCommit() {
 
 function onCapToggle(key) {
   var c = curCaps();
-  var map = { font: 'tglCapFont', size: 'tglCapSize', color: 'tglCapColor', align: 'tglCapAlign', before: 'tglCapBefore', after: 'tglCapAfter' };
+  var map = { font: 'tglCapFont', size: 'tglCapSize', color: 'tglCapColor', align: 'tglCapAlign', before: 'tglCapBefore', after: 'tglCapAfter', spacing: 'tglCapSpacing' };
   c.use[key] = !!$(map[key]).checked;
-  var rows = { font: 'rowCapFont', size: 'rowCapSize', color: 'rowCapColor', align: 'rowCapAlign', before: 'rowCapBefore', after: 'rowCapAfter' };
+  var rows = { font: 'rowCapFont', size: 'rowCapSize', color: 'rowCapColor', align: 'rowCapAlign', before: 'rowCapBefore', after: 'rowCapAfter', spacing: 'rowCapSpacing' };
   setRowOff(rows[key], !c.use[key]);
   renderCaptionPreview();
   refreshDirty();
@@ -1944,7 +2033,9 @@ function renderCaptionPreview() {
   el.innerText = state.curCapType === 'tabel'
     ? 'Table 1.1 Sample Observation Results and Spectrophotometer Absorbance Measurements'
     : 'Figure 2.3 Standard Solution Calibration Curve at 520 nm Wavelength';
-  $('previewCapMeta').innerText = df + ' • ' + c.size + 'pt';
+  var sp = c.use.spacing ? (c.spacing || '1.0') : '1.0';
+  el.style.lineHeight = sp;
+  $('previewCapMeta').innerText = df + ' • ' + c.size + 'pt • ' + sp;
 }
 
 /* ---------- palette popover ---------- */
@@ -2385,12 +2476,11 @@ function applyInitialData() {
           style: (typeof src.style === 'string' && src.style) ? src.style : 'none',
           use: src.use || defaultUse8(),
           captions: {
-            tabel: Object.assign(defaultCap('Left'), src.captions ? src.captions.tabel : null),
-            gambar: Object.assign(defaultCap('Center'), src.captions ? src.captions.gambar : null)
-          }
+            tabel: normCap(Object.assign(defaultCap('Left'), src.captions ? src.captions.tabel : null), 'Left'),
+            gambar: normCap(Object.assign(defaultCap('Center'), src.captions ? src.captions.gambar : null), 'Center')
+          },
+          heading: normHeading(src.heading ? clone(src.heading) : null)
         };
-        if (!p.captions.tabel.use) p.captions.tabel.use = defaultUse6();
-        if (!p.captions.gambar.use) p.captions.gambar.use = defaultUse6();
         state.presets[k] = p;
       });
     }
@@ -2481,6 +2571,9 @@ window.openFontPop = openFontPop;
 window.closeFontPop = closeFontPop;
 window.pickFont = pickFont;
 window.onCapToggle = onCapToggle;
+window.setCapSpacing = setCapSpacing;
+window.setHeadingSpacing = setHeadingSpacing;
+window.onHeadingToggle = onHeadingToggle;
 window.stepCapField = stepCapField;
 window.setCapAlign = setCapAlign;
 window.switchCaptionType = switchCaptionType;
