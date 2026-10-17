@@ -21,6 +21,10 @@ Version numbers follow the in-app `APP_VERSION`.
 - Preset switcher (Win+Shift+F) sizes its window to the list, so no
   empty area under the hints bar; the popup fills the window.
 - Format Text tab renamed Body Text.
+- Smart Inline Format (Settings, on by default): when the selection is
+  only part of a paragraph, Format Text applies font, size, style and
+  color only, so inline code no longer overwrites the paragraph's line
+  spacing, alignment or spacing. One Code preset now covers both cases.
 - Caption target switch moved next to the page title; preview meta
   sits in the preview header to save vertical space.
 

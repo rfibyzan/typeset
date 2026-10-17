@@ -835,6 +835,10 @@
           <span class="row-name">Always on Top</span>
           <input type="checkbox" class="chk" id="chkAlwaysOnTop" checked onchange="onAlwaysOnTop()" title="Always on Top" aria-label="Always on Top" />
         </div>
+        <div class="row" style="padding-top:6px; padding-bottom:6px;" title="When the selection is only part of a paragraph, Format Text applies font, size, style and color only, and leaves line spacing, alignment and spacing of the paragraph untouched.">
+          <span class="row-name">Smart Inline Format <span style="color:var(--subtle);font-weight:400;">· partial selection keeps paragraph spacing</span></span>
+          <input type="checkbox" class="chk" id="chkSmartInline" checked onchange="onSmartInline()" aria-label="Smart Inline Format" />
+        </div>
       </div>
 
       <div class="card">
@@ -975,6 +979,7 @@ var state = {
   activeTab: 'text',
   theme: 'dark',
   alwaysOnTop: true,
+  smartInline: true,
   curCapType: 'tabel',
   presets: {},
   shortcuts: {
@@ -2232,6 +2237,11 @@ function setTheme(t, silent) {
   if (!silent) sendToHost({ action: 'setTheme', theme: state.theme });
 }
 
+function onSmartInline() {
+  state.smartInline = !!$('chkSmartInline').checked;
+  sendToHost({ action: 'setSmartInline', value: state.smartInline });
+}
+
 function onAlwaysOnTop() {
   state.alwaysOnTop = !!$('chkAlwaysOnTop').checked;
   sendToHost({ action: 'setAlwaysOnTop', value: state.alwaysOnTop });
@@ -2474,6 +2484,7 @@ function applyInitialData() {
     if (av) av.innerHTML = 'Typeset v' + update.current + ' &bull; <button type="button" onclick="openChangelog()" title="View release notes on GitHub">View Changelog</button> &bull; <button type="button" onclick="manualCheck()" title="Check for updates now">Check for updates</button>';
     if (d.theme === 'light' || d.theme === 'dark') state.theme = d.theme;
     if (typeof d.alwaysOnTop === 'boolean') state.alwaysOnTop = d.alwaysOnTop;
+    if (typeof d.smartInline === 'boolean') state.smartInline = d.smartInline;
     if (d.presets) {
       Object.keys(d.presets).forEach(function(k) {
         var src = d.presets[k] || {};
@@ -2546,6 +2557,8 @@ window.addEventListener('DOMContentLoaded', function() {
   setTheme(state.theme, true);
   var aot = $('chkAlwaysOnTop');
   if (aot) aot.checked = state.alwaysOnTop !== false;
+  var sil = $('chkSmartInline');
+  if (sil) sil.checked = state.smartInline !== false;
   rebuildPresetDropdown(state.activePreset);
   renderShortcutRows();
   switchTab(state.activeTab || 'text');
@@ -2590,6 +2603,7 @@ window.setCapAlign = setCapAlign;
 window.switchCaptionType = switchCaptionType;
 window.setTheme = setTheme;
 window.onAlwaysOnTop = onAlwaysOnTop;
+window.onSmartInline = onSmartInline;
 window.showResetPop = showResetPop;
 window.hideResetPop = hideResetPop;
 window.confirmReset = confirmReset;

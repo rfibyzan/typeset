@@ -546,6 +546,26 @@ EndWordUndo(wordApp, started) {
 }
 
 ; ==========================================================
+; True bila Smart Inline aktif dan seleksi berada di dalam satu paragraf
+; tanpa mencakup paragraf itu secara penuh. Kursor tanpa seleksi = false.
+IsInlineSelection(sel) {
+    global iniFile
+    if !Integer(IniRead(iniFile, "Settings", "SmartInline", "1"))
+        return false
+    try {
+        if (sel.Start == sel.End)
+            return false
+        if (sel.Paragraphs.Count != 1)
+            return false
+        pr := sel.Paragraphs(1).Range
+        ; pr.End mencakup tanda paragraf, jadi End - 1 = akhir teks.
+        return (sel.Start > pr.Start || sel.End < pr.End - 1)
+    } catch {
+        return false
+    }
+}
+
+; ==========================================================
 ApplyPresetToWord(presetName := "") {
     if (presetName == "")
         presetName := IniRead(iniFile, "Settings", "ActivePreset", "")
@@ -581,6 +601,13 @@ ApplyPresetToWord(presetName := "") {
             }
             if (cfg.use["color"])
                 sel.Font.Color := HexToWordColor(cfg.color)
+            ; Smart inline: seleksi hanya sebagian dari satu paragraf (mis. kode
+            ; yang disisipkan di kalimat) -> format paragraf dilewati supaya
+            ; line spacing/alignment/spasi paragraf induk tidak tertimpa.
+            if IsInlineSelection(sel) {
+                ShowToast("Format applied (inline): " . presetName)
+                return true
+            }
             if (cfg.use["align"]) {
                 switch cfg.align {
                     case "Left":    sel.ParagraphFormat.Alignment := 0
@@ -1370,6 +1397,7 @@ ExportConfigToJs() {
     }
     js .= "  },`n"
     js .= "  alwaysOnTop: " . aotJs . ",`n"
+    js .= "  smartInline: " . (Integer(IniRead(iniFile, "Settings", "SmartInline", "1")) ? "true" : "false") . ",`n"
 
     js .= "  lastUsed: {`n"
     firstLU := true
@@ -1602,6 +1630,8 @@ ProcessWebCommand(rawJson) {
                 if IsObject(webGui) {
                     try WinSetAlwaysOnTop(aot, webGui.Hwnd)
                 }
+            case "setSmartInline":
+                IniWrite(InStr(rawJson, '`"value`":true') ? 1 : 0, iniFile, "Settings", "SmartInline")
             case "resetConfig":
                 try {
                     FileDelete(iniFile)
